@@ -14,11 +14,14 @@ import { buildPaletteListEntryRenderKeys } from '@/components/cmd-j/palette-list
 import type { WorktreeJumpPaletteSections } from './use-worktree-jump-palette-sections'
 import type { WorktreeJumpPaletteWorktrees } from './use-worktree-jump-palette-worktrees'
 import type { WorktreeJumpPaletteLocalState } from './use-worktree-jump-palette-local-state'
+import type { AiVaultHistorySearchMatch } from '../../../shared/ai-vault-history-types'
 
 type WorktreeJumpPaletteListEntriesInput = WorktreeJumpPaletteSections &
   Pick<WorktreeJumpPaletteWorktrees, 'hasQuery'> &
   Pick<WorktreeJumpPaletteLocalState, 'autoSelectedItemIdRef' | 'taskSourceUrl'> &
-  Pick<WorktreeJumpPaletteSections, 'middleLeadsSections' | 'handleExpandSection'>
+  Pick<WorktreeJumpPaletteSections, 'middleLeadsSections' | 'handleExpandSection'> & {
+    historyMatches: AiVaultHistorySearchMatch[]
+  }
 
 export function useWorktreeJumpPaletteListEntries({
   hasQuery,
@@ -27,6 +30,7 @@ export function useWorktreeJumpPaletteListEntries({
   showCreateAction,
   autoSelectedItemIdRef,
   taskSourceUrl,
+  historyMatches,
   handleExpandSection,
   middleLeadsSections
 }: WorktreeJumpPaletteListEntriesInput) {
@@ -157,6 +161,21 @@ export function useWorktreeJumpPaletteListEntries({
       pushWorktreeSection()
       return entries
     }
+    if (historyMatches.length > 0) {
+      entries.push({
+        id: '__header_conversation_history__',
+        type: 'section-header',
+        label: translate('worktreeJumpPalette.conversationHistoryHeader', 'Conversation History')
+      })
+      appendPaletteListEntries(
+        entries,
+        historyMatches.map((match) => ({
+          id: `conversation-history:${match.agent}:${match.sessionId}:${match.message.id}`,
+          type: 'conversation-history' as const,
+          match
+        }))
+      )
+    }
     if (multiPrimaryFirstScreen && multiPrimaryLayout) {
       const leadingSectionKey = openTabsLeadSections ? 'open-tabs' : 'worktrees'
       const trailingSectionKey = openTabsLeadSections ? 'worktrees' : 'open-tabs'
@@ -230,6 +249,7 @@ export function useWorktreeJumpPaletteListEntries({
   }, [
     handleExpandSection,
     hasQuery,
+    historyMatches,
     middleLeadsSections,
     openTabsLeadSections,
     paletteSections,

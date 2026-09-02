@@ -180,6 +180,7 @@ export function buildDefaultSettings(args: {
     defaultTuiAgent: null,
     disabledTuiAgents: [...DEFAULT_DISABLED_TUI_AGENTS],
     pluginSystemEnabled: false,
+    conversationKnowledgeEnabled: false,
     disabledPlugins: [],
     pluginConsents: {},
     devPluginPaths: [],

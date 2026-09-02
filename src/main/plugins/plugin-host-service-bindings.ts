@@ -1,5 +1,6 @@
-import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
+import type { AiVaultAgent } from '../../shared/ai-vault-types'
 import { PLUGIN_WORKSPACE_TERMINAL_LIMIT } from '../../shared/plugins/plugin-host-api'
+import type { PluginEventName } from '../../shared/plugins/plugin-manifest'
 import type { PluginHostServices } from './plugin-host-methods'
 import { PluginSecretsStore } from './plugin-secrets-store'
 import { PluginKvStore } from './plugin-storage-store'
@@ -30,6 +31,15 @@ export type PluginRuntimeDelegate = {
     title: string
     body?: string
   }): Promise<{ delivered: boolean }>
+  searchAiVaultHistory(args: {
+    query: string
+    limit?: number
+  }): ReturnType<PluginHostServices['searchHistory']>
+  readAiVaultHistorySession(args: {
+    agent: AiVaultAgent
+    sessionId: string
+    limit?: number
+  }): ReturnType<PluginHostServices['readHistory']>
 }
 
 export function bindPluginHostServices(input: {
@@ -76,6 +86,8 @@ export function bindPluginHostServices(input: {
       }
     },
     dispatchPluginNotification: (notification) => delegate.dispatchPluginNotification(notification),
+    searchHistory: (args) => delegate.searchAiVaultHistory(args),
+    readHistory: (args) => delegate.readAiVaultHistorySession(args),
     storage: {
       get: (key, itemKey) => new PluginKvStore(pluginsDataDir, key, 'storage.json').get(itemKey),
       set: (key, itemKey, value) =>

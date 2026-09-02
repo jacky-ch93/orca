@@ -6,8 +6,14 @@ import type {
   AiVaultSessionTitleRequest,
   AiVaultSessionTitlesResult
 } from '../../shared/ai-vault-session-title'
-import type { AiVaultListArgs, AiVaultListResult } from '../../shared/ai-vault-types'
+import type { AiVaultAgent, AiVaultListArgs, AiVaultListResult } from '../../shared/ai-vault-types'
 import { listAiVaultSessions } from '../ai-vault/cached-session-list'
+import {
+  readAiVaultHistorySession,
+  searchAiVaultHistory,
+  type AiVaultHistoryReadResult,
+  type AiVaultHistorySearchResult
+} from '../ai-vault/session-history'
 import { resolveLocalAiVaultSessionTitles } from '../ai-vault/session-title-resolver'
 
 export class RuntimeAiVaultCommands {
@@ -19,6 +25,22 @@ export class RuntimeAiVaultCommands {
 
   list(args?: AiVaultListArgs): Promise<AiVaultListResult> {
     return listAiVaultSessions(args)
+  }
+
+  searchHistory(args: {
+    query: string
+    limit?: number
+    scopePaths?: readonly string[]
+  }): Promise<AiVaultHistorySearchResult> {
+    return searchAiVaultHistory(args)
+  }
+
+  readHistory(args: {
+    agent: AiVaultAgent
+    sessionId: string
+    limit?: number
+  }): Promise<AiVaultHistoryReadResult> {
+    return readAiVaultHistorySession(args)
   }
 
   resolveTitles(

@@ -35,6 +35,7 @@ const STATIC_RIGHT_SIDEBAR_TABS = [
   'explorer',
   'search',
   'vault',
+  'conversation-knowledge',
   'workspaces',
   'pr-checks',
   'source-control',

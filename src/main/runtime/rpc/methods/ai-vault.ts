@@ -18,6 +18,9 @@ import {
 // traversal); the count/length caps mirror the worktree-schemas bounding style.
 const AI_VAULT_SCOPE_PATH_MAX_LENGTH = 4096
 const AI_VAULT_LIMIT_MAX = 2000
+const AI_VAULT_HISTORY_QUERY_MAX_LENGTH = 512
+const AI_VAULT_HISTORY_RESULT_LIMIT_MAX = 50
+const AI_VAULT_HISTORY_READ_LIMIT_MAX = 200
 
 const executionHostIdSchema = z.string().transform((value, ctx): `runtime:${string}` => {
   const parsed = parseExecutionHostId(value)
@@ -80,7 +83,28 @@ export const AiVaultSessionTitlesParams = z.object({
     .max(AI_VAULT_SESSION_TITLE_REQUEST_MAX_COUNT)
 })
 
+export const AiVaultHistorySearchParams = z.object({
+  query: z.string().trim().min(1).max(AI_VAULT_HISTORY_QUERY_MAX_LENGTH),
+  limit: z.number().int().positive().max(AI_VAULT_HISTORY_RESULT_LIMIT_MAX).optional()
+})
+
+export const AiVaultHistoryReadParams = z.object({
+  agent: z.enum(AI_VAULT_AGENTS),
+  sessionId: z.string().min(1).max(512),
+  limit: z.number().int().positive().max(AI_VAULT_HISTORY_READ_LIMIT_MAX).optional()
+})
+
 export const AI_VAULT_METHODS: RpcMethod[] = [
+  defineMethod({
+    name: 'aiVault.searchHistory',
+    params: AiVaultHistorySearchParams,
+    handler: (params, { runtime }) => runtime.searchAiVaultHistory(params)
+  }),
+  defineMethod({
+    name: 'aiVault.readHistory',
+    params: AiVaultHistoryReadParams,
+    handler: (params, { runtime }) => runtime.readAiVaultHistorySession(params)
+  }),
   defineMethod({
     name: 'aiVault.resolveSessionTitles',
     params: AiVaultSessionTitlesParams,

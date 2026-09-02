@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Plug, Files, GitBranch, ListChecks, Workflow } from 'lucide-react'
+import { Files, GitBranch, ListChecks, Network, Plug, Workflow } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useRepoById } from '@/store/selectors'
 import { isFolderRepo } from '../../../../shared/repo-kind'
@@ -46,6 +46,9 @@ export function useRightSidebarActivityItems({
   const isFolder = isFolderWorkspace || (activeRepo ? isFolderRepo(activeRepo) : false)
   const isSshRepo = Boolean(activeRepo?.connectionId)
   const pluginSystemEnabled = useAppStore((s) => s.settings?.pluginSystemEnabled === true)
+  const conversationKnowledgeEnabled = useAppStore(
+    (s) => s.settings?.conversationKnowledgeEnabled === true
+  )
   const pluginPanels = usePluginPanels()
   const visiblePluginPanels = useMemo(
     () => (pluginSystemEnabled ? pluginPanels : []),
@@ -73,6 +76,19 @@ export function useRightSidebarActivityItems({
         title: translate('auto.components.right.sidebar.index.aiVaultSessionHistory', 'Agents'),
         shortcut: ''
       },
+      ...(conversationKnowledgeEnabled
+        ? [
+            {
+              id: 'conversation-knowledge' as const,
+              icon: Network,
+              title: translate(
+                'auto.components.right.sidebar.conversationKnowledge',
+                'Conversation Knowledge'
+              ),
+              shortcut: ''
+            }
+          ]
+        : []),
       {
         id: 'workspaces',
         icon: Workflow,
@@ -117,6 +133,7 @@ export function useRightSidebarActivityItems({
     ],
     [
       checksShortcut,
+      conversationKnowledgeEnabled,
       explorerShortcut,
       pluginPanelErrors,
       visiblePluginPanels,

@@ -103,6 +103,48 @@ export function ExperimentalPane({
         <NativeChatExperimentalSetting settings={settings} updateSettings={updateSettings} />
       ) : null}
 
+      <SearchableSetting
+        title={translate(
+          'auto.components.settings.ExperimentalPane.conversationKnowledge',
+          'Conversation Knowledge'
+        )}
+        description={translate(
+          'auto.components.settings.ExperimentalPane.conversationKnowledgeDescription',
+          'Search messages across local agent sessions and inspect their source conversations.'
+        )}
+        keywords={['conversation', 'history', 'knowledge', 'search']}
+        className="space-y-3 py-2"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 shrink space-y-0.5">
+            <Label>
+              {translate(
+                'auto.components.settings.ExperimentalPane.conversationKnowledge',
+                'Conversation Knowledge'
+              )}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {translate(
+                'auto.components.settings.ExperimentalPane.conversationKnowledgeCopy',
+                'Adds a right-sidebar panel for searching complete local Claude, Codex, Grok, and OMP conversations. The panel reads local transcripts only when you use it.'
+              )}
+            </p>
+          </div>
+          <SettingsSwitch
+            checked={settings.conversationKnowledgeEnabled === true}
+            ariaLabel={translate(
+              'auto.components.settings.ExperimentalPane.conversationKnowledgeToggle',
+              'Toggle Conversation Knowledge'
+            )}
+            onChange={() =>
+              updateSettings({
+                conversationKnowledgeEnabled: settings.conversationKnowledgeEnabled !== true
+              })
+            }
+          />
+        </div>
+      </SearchableSetting>
+
       {showTerminalAttention ? (
         <SearchableSetting
           title={translate(

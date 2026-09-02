@@ -18,9 +18,20 @@ import type {
   AiVaultPrepareSessionResumeArgs,
   AiVaultPrepareSessionResumeResult
 } from '../../shared/ai-vault-resume-preparation'
+import type {
+  AiVaultHistoryReadResult,
+  AiVaultHistorySearchResult
+} from '../../shared/ai-vault-history-types'
+import type { AiVaultAgent } from '../../shared/ai-vault-types'
 
 export type AiVaultApi = {
   listSessions: (args?: AiVaultListArgs) => Promise<AiVaultListResult>
+  searchHistory: (args: { query: string; limit?: number }) => Promise<AiVaultHistorySearchResult>
+  readHistory: (args: {
+    agent: AiVaultAgent
+    sessionId: string
+    limit?: number
+  }) => Promise<AiVaultHistoryReadResult>
   resolveSessionTitles: (args: AiVaultSessionTitlesArgs) => Promise<AiVaultSessionTitlesResult>
   cancelListSessions: (args: { requestToken: string }) => Promise<void>
   prepareSessionResume: (

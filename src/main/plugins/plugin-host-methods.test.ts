@@ -12,6 +12,8 @@ function createServices(storageSet: PluginHostServices['storage']['set']): Plugi
     listWorktreeTerminals: vi.fn().mockResolvedValue([]),
     sendTerminalText: vi.fn().mockResolvedValue({ accepted: true }),
     dispatchPluginNotification: vi.fn().mockResolvedValue({ delivered: true }),
+    searchHistory: vi.fn().mockResolvedValue({ matches: [], scannedSessionCount: 0 }),
+    readHistory: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
     storage: {
       get: vi.fn(),
       set: storageSet,
@@ -135,7 +137,9 @@ function createTerminalHarness(terminalHandles: string[]): {
       terminals: terminalHandles.map((handle) => ({ handle, title: null }))
     }),
     sendTerminal: vi.fn().mockResolvedValue({ accepted: true }),
-    dispatchPluginNotification: vi.fn().mockResolvedValue({ delivered: true })
+    dispatchPluginNotification: vi.fn().mockResolvedValue({ delivered: true }),
+    searchAiVaultHistory: vi.fn().mockResolvedValue({ matches: [], scannedSessionCount: 0 }),
+    readAiVaultHistorySession: vi.fn().mockResolvedValue({ messages: [], truncated: false })
   }
   return {
     delegate,

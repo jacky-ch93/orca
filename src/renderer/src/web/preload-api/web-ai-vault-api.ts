@@ -9,6 +9,11 @@ import type {
   AiVaultSessionTitlesResult
 } from '../../../../shared/ai-vault-session-title'
 import type { AiVaultListArgs, AiVaultListResult } from '../../../../shared/ai-vault-types'
+import type { AiVaultAgent } from '../../../../shared/ai-vault-types'
+import type {
+  AiVaultHistoryReadResult,
+  AiVaultHistorySearchResult
+} from '../../../../shared/ai-vault-history-types'
 import {
   normalizeExecutionHostScope,
   toRuntimeExecutionHostId
@@ -21,6 +26,10 @@ import { translate } from '@/i18n/i18n'
 
 export function createWebAiVaultApi(): NonNullable<Partial<PreloadApi>['aiVault']> {
   return {
+    searchHistory: (args: { query: string; limit?: number }) =>
+      callRuntimeResult<AiVaultHistorySearchResult>('aiVault.searchHistory', args),
+    readHistory: (args: { agent: AiVaultAgent; sessionId: string; limit?: number }) =>
+      callRuntimeResult<AiVaultHistoryReadResult>('aiVault.readHistory', args),
     listSessions: (args?: AiVaultListArgs) => {
       const environment = requireActiveEnvironment()
       const executionHostId = toRuntimeExecutionHostId(environment.id)

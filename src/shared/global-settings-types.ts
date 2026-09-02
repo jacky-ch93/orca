@@ -323,6 +323,8 @@ export type GlobalSettings = {
   /** Master switch for the experimental plugin system. Off by default: no
    *  discovery, no panels, no plugin code paths run at all. */
   pluginSystemEnabled: boolean
+  /** Enables the local, built-in cross-project conversation search panel. */
+  conversationKnowledgeEnabled?: boolean
   /** Qualified plugin keys (`publisher.id`) the user disabled. Discovered
    *  plugins stay listed but are not activated. */
   disabledPlugins: string[]
