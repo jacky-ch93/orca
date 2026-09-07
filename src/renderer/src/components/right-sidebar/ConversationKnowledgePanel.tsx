@@ -183,9 +183,13 @@ function KnowledgeDetail({ item }: { item: ConversationKnowledgeItem }): React.J
   const openSourceHistory = (): void => {
     selectConversationHistoryTarget(item.source)
     const store = useAppStore.getState()
+    store.setConversationKnowledgeDrawerOpen(false)
     store.setRightSidebarTab('vault')
     store.setRightSidebarOpen(true)
-    window.dispatchEvent(new Event('orca:conversation-history-select'))
+    // Let the right-sidebar panel mount before delivering the one-shot target.
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('orca:conversation-history-select'))
+    }, 0)
   }
   return (
     <article className="space-y-4 p-4">
