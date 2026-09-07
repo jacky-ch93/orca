@@ -16,7 +16,7 @@ import { useWorkspaceEmojiShortcodeInput } from '@/components/workspace-emoji/us
 import { usePaletteSearchEvaluationContext } from '@/hooks/use-palette-search-evaluation-context'
 import type { WorktreePaletteRequestGuard } from '@/lib/worktree-palette-create-action'
 import { useMemo } from 'react'
-import { useWorktreeJumpPaletteHistorySearch } from './use-worktree-jump-palette-history-search'
+import { useWorktreeJumpPaletteKnowledgeSearch } from './use-worktree-jump-palette-knowledge-search'
 
 export function useWorktreeJumpPaletteController({
   visible,
@@ -97,8 +97,8 @@ export function useWorktreeJumpPaletteController({
     ...openTabs,
     ...projectTargets
   })
-  const history = useWorktreeJumpPaletteHistorySearch({
-    enabled: storeState.settings?.conversationKnowledgeEnabled === true,
+  const knowledge = useWorktreeJumpPaletteKnowledgeSearch({
+    enabled: storeState.settings?.conversationKnowledgeEnabled === true && localState.knowledgeOnly,
     query: localState.deferredQuery,
     visible
   })
@@ -118,7 +118,7 @@ export function useWorktreeJumpPaletteController({
     ...openTabs,
     ...sections,
     ...taskUrl,
-    ...history
+    ...knowledge
   })
   const selectionLifecycle = useWorktreeJumpPaletteSelectionLifecycle({
     ...storeState,
@@ -129,7 +129,7 @@ export function useWorktreeJumpPaletteController({
     ...recentTabs,
     ...projectTargets,
     ...quickActions,
-    ...history,
+    ...knowledge,
     ...sections,
     ...listEntries,
     ...taskUrl
@@ -138,7 +138,7 @@ export function useWorktreeJumpPaletteController({
     ...storeState,
     ...localState,
     ...quickActions,
-    ...history,
+    ...knowledge,
     ...selectionLifecycle
   })
   const emojiInput = useWorkspaceEmojiShortcodeInput({
@@ -168,6 +168,7 @@ export function useWorktreeJumpPaletteController({
     ...recentTabs,
     ...projectTargets,
     ...quickActions,
+    ...knowledge,
     ...sections,
     ...listEntries,
     ...selectionLifecycle,

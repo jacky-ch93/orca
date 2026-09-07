@@ -95,6 +95,34 @@ export function WorktreeJumpPaletteSurface({
         filter={controller.filter}
         onFilterChange={controller.setFilter}
       />
+      {controller.settings?.conversationKnowledgeEnabled === true ? (
+        <div
+          className="mx-3 mt-2 flex w-fit rounded-md border border-border/60 bg-muted/35 p-0.5"
+          role="tablist"
+          aria-label={translate('worktreeJumpPalette.searchScope', 'Search scope')}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!controller.knowledgeOnly}
+            onClick={() => controller.setKnowledgeOnly(false)}
+            className="rounded-sm px-2 py-1 text-[11px] font-medium text-muted-foreground data-[active=true]:bg-background data-[active=true]:text-foreground"
+            data-active={!controller.knowledgeOnly}
+          >
+            {translate('worktreeJumpPalette.allResults', 'All')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={controller.knowledgeOnly}
+            onClick={() => controller.setKnowledgeOnly(true)}
+            className="rounded-sm px-2 py-1 text-[11px] font-medium text-muted-foreground data-[active=true]:bg-background data-[active=true]:text-foreground"
+            data-active={controller.knowledgeOnly}
+          >
+            {translate('worktreeJumpPalette.knowledgeResults', 'Knowledge')}
+          </button>
+        </div>
+      ) : null}
       <CommandList
         ref={controller.listRef}
         onPointerDownCapture={() => {
@@ -102,7 +130,7 @@ export function WorktreeJumpPaletteSurface({
         }}
         className="max-h-[min(600px,calc(100vh-14rem))] px-2.5 pb-2.5 pt-2"
       >
-        {controller.isLoading &&
+        {(controller.knowledgeOnly ? controller.knowledgeLoading : controller.isLoading) &&
         controller.selectableItems.length === 0 &&
         !controller.showCreateAction ? (
           <PaletteState

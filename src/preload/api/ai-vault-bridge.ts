@@ -12,6 +12,10 @@ import type { AiVaultSessionTitlesArgs } from '../../shared/ai-vault-session-tit
 import type { AiVaultPrepareSessionResumeArgs } from '../../shared/ai-vault-resume-preparation'
 import type { AiVaultAgent } from '../../shared/ai-vault-types'
 import type { PreloadApi } from '../api-types'
+import type {
+  GenerateConversationKnowledgeRequest,
+  StartConversationKnowledgeIndexRequest
+} from '../../shared/conversation-knowledge-items'
 
 export const aiVaultApi = {
   listSessions: (args?: AiVaultListArgs): Promise<unknown> =>
@@ -23,7 +27,15 @@ export const aiVaultApi = {
     sessionId: string
     limit?: number
   }): Promise<unknown> => ipcRenderer.invoke('aiVault:readHistory', args),
-  resolveSessionTitles: (args: AiVaultSessionTitlesArgs) =>
+  enrichHistory: (args: GenerateConversationKnowledgeRequest): Promise<unknown> =>
+    ipcRenderer.invoke('aiVault:enrichHistory', args),
+  listKnowledge: (args?: { query?: string }): Promise<unknown> =>
+    ipcRenderer.invoke('aiVault:listKnowledge', args),
+  startKnowledgeIndex: (args: StartConversationKnowledgeIndexRequest): Promise<unknown> =>
+    ipcRenderer.invoke('aiVault:startKnowledgeIndex', args),
+  getKnowledgeIndexStatus: (): Promise<unknown> =>
+    ipcRenderer.invoke('aiVault:getKnowledgeIndexStatus'),
+  resolveSessionTitles: (args: AiVaultSessionTitlesArgs): Promise<unknown> =>
     ipcRenderer.invoke('aiVault:resolveSessionTitles', args),
   cancelListSessions: (args: { requestToken: string }): Promise<void> =>
     ipcRenderer.invoke('aiVault:cancelListSessions', args),

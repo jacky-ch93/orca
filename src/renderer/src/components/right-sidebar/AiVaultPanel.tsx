@@ -52,6 +52,7 @@ import { usePersistedAiVaultViewOptions } from './use-persisted-ai-vault-view-op
 import { AgentSessionContinuationDialog } from '@/components/agent-session-continuation/AgentSessionContinuationDialog'
 import { AiVaultScanIssueBanners } from './AiVaultScanIssueBanners'
 import { useAiVaultSessionDeleteAction } from './ai-vault-session-delete-action'
+import { consumeConversationHistoryTarget } from '@/lib/conversation-history-selection'
 
 export default function AiVaultPanel(): React.JSX.Element {
   const activeWorktreeId = useActiveWorktreeId()
@@ -190,6 +191,23 @@ export default function AiVaultPanel(): React.JSX.Element {
     hideEmptySessions,
     sessionLimit
   })
+
+  useEffect(() => {
+    const revealSource = (): void => {
+      const target = consumeConversationHistoryTarget()
+      if (!target) {
+        return
+      }
+      setQuery(target.sessionId)
+      setScope('all')
+      setAgentEnabled(target.agent, true)
+      setCollapsedGroups(new Set())
+      onExecutionHostScopeChange(target.executionHostId)
+    }
+    revealSource()
+    window.addEventListener('orca:conversation-history-select', revealSource)
+    return () => window.removeEventListener('orca:conversation-history-select', revealSource)
+  }, [onExecutionHostScopeChange, setAgentEnabled])
 
   // Workspace is the preferred default, but unavailable context still falls back to All.
   useEffect(() => {

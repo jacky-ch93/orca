@@ -101,7 +101,7 @@ export function WorktreeJumpPaletteEntry({
       />
     )
   }
-  if (entry.type === 'conversation-history') {
+  if (entry.type === 'conversation-knowledge') {
     return (
       <CommandItem
         value={renderKey}
@@ -109,12 +109,12 @@ export function WorktreeJumpPaletteEntry({
         className="jump-palette-item mx-0.5 flex min-h-0 cursor-pointer items-start gap-3 rounded-lg px-3 py-2 text-left"
       >
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium">{entry.match.title}</p>
+          <p className="truncate text-[13px] font-medium">{entry.item.source.title}</p>
           <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-            {entry.match.message.text}
+            {entry.item.knowledge.summary}
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {entry.match.agent} · {entry.match.message.role}
+            {entry.item.knowledge.topics.join(' · ') || entry.item.generator.agent}
           </p>
         </div>
       </CommandItem>

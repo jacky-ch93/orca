@@ -10,6 +10,7 @@ import { NumberField, SettingsSwitch } from './SettingsFormControls'
 import { translate } from '@/i18n/i18n'
 import { NativeChatExperimentalSetting } from './NativeChatExperimentalSetting'
 import { AgentDashboardExperimentalSetting } from './AgentDashboardExperimentalSetting'
+import { ConversationKnowledgeExperimentalSetting } from './ConversationKnowledgeExperimentalSetting'
 import { EphemeralVmsExperimentalSetting } from './EphemeralVmsExperimentalSetting'
 import {
   MAX_AGENT_HIBERNATION_IDLE_MS,
@@ -73,7 +74,7 @@ export function ExperimentalPane({
             'Floating animated pet in the bottom-right corner.'
           )}
           keywords={getExperimentalSearchEntry().pet.keywords}
-          className="space-y-3 py-2"
+          className="ml-4 space-y-3 border-l-2 border-border/60 py-2 pl-4"
           id="experimental-pet"
         >
           <div className="flex items-start justify-between gap-4">
@@ -103,47 +104,10 @@ export function ExperimentalPane({
         <NativeChatExperimentalSetting settings={settings} updateSettings={updateSettings} />
       ) : null}
 
-      <SearchableSetting
-        title={translate(
-          'auto.components.settings.ExperimentalPane.conversationKnowledge',
-          'Conversation Knowledge'
-        )}
-        description={translate(
-          'auto.components.settings.ExperimentalPane.conversationKnowledgeDescription',
-          'Search messages across local agent sessions and inspect their source conversations.'
-        )}
-        keywords={['conversation', 'history', 'knowledge', 'search']}
-        className="space-y-3 py-2"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 shrink space-y-0.5">
-            <Label>
-              {translate(
-                'auto.components.settings.ExperimentalPane.conversationKnowledge',
-                'Conversation Knowledge'
-              )}
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              {translate(
-                'auto.components.settings.ExperimentalPane.conversationKnowledgeCopy',
-                'Adds a right-sidebar panel for searching complete local Claude, Codex, Grok, and OMP conversations. The panel reads local transcripts only when you use it.'
-              )}
-            </p>
-          </div>
-          <SettingsSwitch
-            checked={settings.conversationKnowledgeEnabled === true}
-            ariaLabel={translate(
-              'auto.components.settings.ExperimentalPane.conversationKnowledgeToggle',
-              'Toggle Conversation Knowledge'
-            )}
-            onChange={() =>
-              updateSettings({
-                conversationKnowledgeEnabled: settings.conversationKnowledgeEnabled !== true
-              })
-            }
-          />
-        </div>
-      </SearchableSetting>
+      <ConversationKnowledgeExperimentalSetting
+        settings={settings}
+        updateSettings={updateSettings}
+      />
 
       {showTerminalAttention ? (
         <SearchableSetting

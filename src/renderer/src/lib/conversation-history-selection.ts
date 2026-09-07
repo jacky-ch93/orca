@@ -1,13 +1,20 @@
-import type { AiVaultHistorySearchMatch } from '../../../shared/ai-vault-history-types'
+import type { AiVaultAgent } from '../../../shared/ai-vault-types'
+import type { ExecutionHostId } from '../../../shared/execution-host'
 
-let pendingMatch: AiVaultHistorySearchMatch | null = null
-
-export function selectConversationHistoryMatch(match: AiVaultHistorySearchMatch): void {
-  pendingMatch = match
+export type ConversationHistoryTarget = {
+  executionHostId: ExecutionHostId
+  agent: AiVaultAgent
+  sessionId: string
 }
 
-export function consumeConversationHistoryMatch(): AiVaultHistorySearchMatch | null {
-  const match = pendingMatch
-  pendingMatch = null
-  return match
+let pendingTarget: ConversationHistoryTarget | null = null
+
+export function selectConversationHistoryTarget(target: ConversationHistoryTarget): void {
+  pendingTarget = target
+}
+
+export function consumeConversationHistoryTarget(): ConversationHistoryTarget | null {
+  const target = pendingTarget
+  pendingTarget = null
+  return target
 }

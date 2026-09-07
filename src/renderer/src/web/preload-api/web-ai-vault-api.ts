@@ -14,6 +14,13 @@ import type {
   AiVaultHistoryReadResult,
   AiVaultHistorySearchResult
 } from '../../../../shared/ai-vault-history-types'
+import type {
+  ConversationKnowledgeItem,
+  ConversationKnowledgeIndexStatus,
+  ConversationKnowledgeListResult,
+  GenerateConversationKnowledgeRequest,
+  StartConversationKnowledgeIndexRequest
+} from '../../../../shared/conversation-knowledge-items'
 import {
   normalizeExecutionHostScope,
   toRuntimeExecutionHostId
@@ -30,6 +37,14 @@ export function createWebAiVaultApi(): NonNullable<Partial<PreloadApi>['aiVault'
       callRuntimeResult<AiVaultHistorySearchResult>('aiVault.searchHistory', args),
     readHistory: (args: { agent: AiVaultAgent; sessionId: string; limit?: number }) =>
       callRuntimeResult<AiVaultHistoryReadResult>('aiVault.readHistory', args),
+    enrichHistory: (args: GenerateConversationKnowledgeRequest) =>
+      callRuntimeResult<ConversationKnowledgeItem>('aiVault.enrichHistory', args),
+    listKnowledge: (args?: { query?: string }) =>
+      callRuntimeResult<ConversationKnowledgeListResult>('aiVault.listKnowledge', args ?? {}),
+    startKnowledgeIndex: (args: StartConversationKnowledgeIndexRequest) =>
+      callRuntimeResult<ConversationKnowledgeIndexStatus>('aiVault.startKnowledgeIndex', args),
+    getKnowledgeIndexStatus: () =>
+      callRuntimeResult<ConversationKnowledgeIndexStatus>('aiVault.getKnowledgeIndexStatus', {}),
     listSessions: (args?: AiVaultListArgs) => {
       const environment = requireActiveEnvironment()
       const executionHostId = toRuntimeExecutionHostId(environment.id)

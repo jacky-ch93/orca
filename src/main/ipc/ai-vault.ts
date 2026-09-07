@@ -1,64 +1,53 @@
 import { app, ipcMain } from 'electron'
 import {
-  configureAiVaultSessionSources,
-  listAiVaultSessions as listCachedLocalAiVaultSessions,
-  resetAiVaultSessionListCacheForTests,
-  type AiVaultSessionSources
-} from '../ai-vault/cached-session-list'
-import { deleteAiVaultSession, registerAiVaultDeleteHandler } from './ai-vault-delete'
-import { listAiVaultSubagentSessions } from './ai-vault-subagent-list'
-import {
+  AI_VAULT_SCOPE_PATHS_MAX_COUNT,
+  AiVaultScanCoordinator,
+  LOCAL_EXECUTION_HOST_ID,
   aiVaultScanIssueResult,
   cancelledAiVaultListResult,
-  mergeAiVaultListResults
-} from '../ai-vault/session-list-results'
-import { scanSshAiVaultSessions } from '../ai-vault/ssh-session-list'
-import { AiVaultScanCoordinator } from '../ai-vault/ai-vault-scan-coordinator'
-import type { AiVaultDeleteSessionArgs } from '../../shared/ai-vault-session-deletion'
-import { describeAiVaultScanError } from '../../shared/ai-vault-scan-error-message'
-import {
-  AI_VAULT_SCOPE_PATHS_MAX_COUNT,
+  configureAiVaultSessionSources,
+  createSenderScopedRequestCancellations,
+  deleteAiVaultSession,
+  describeAiVaultScanError,
+  discoverAiVaultHosts,
+  getActiveSshAiVaultHostInfos,
+  handleAiVaultGetFirstUserPrompt,
+  invalidateAiVaultHostLegCache,
   isAiVaultScanCancelledError,
-  type AiVaultFirstUserPromptArgs,
-  type AiVaultListArgs,
-  type AiVaultListResult,
-  type AiVaultSubagentListArgs,
-  type AiVaultSubagentListResult
-} from '../../shared/ai-vault-types'
-import { handleAiVaultGetFirstUserPrompt } from '../ai-vault/session-first-user-prompt-handler'
-import { registerAiVaultHistoryHandlers } from './ai-vault-history'
-import { registerAiVaultResumeHandler, type AiVaultResumeHandlerOptions } from './ai-vault-resume'
-import {
-  LOCAL_EXECUTION_HOST_ID,
+  listAiVaultSubagentSessions,
+  listCachedLocalAiVaultSessions,
+  mergeAiVaultListResults,
   parseExecutionHostId,
+  projectStructuredAiVaultSessions,
+  registerAiVaultDeleteHandler,
+  registerAiVaultHistoryHandlers,
+  registerAiVaultResumeHandler,
+  requestedAiVaultSessionDepth,
   requestedExecutionHostScope,
+  resolveAiVaultSessionTitlesByHost,
+  resetAiVaultHostLegCacheForTests,
+  resetAiVaultSessionListCacheForTests,
+  scanHostLegWithCache,
+  scanRuntimeAiVaultSessions,
+  scanSshAiVaultSessions,
   toRuntimeExecutionHostId,
   toSshExecutionHostId,
-  type ExecutionHostScope
-} from '../../shared/execution-host'
-import { getActiveSshAiVaultHostInfos } from './ssh'
-import { createSenderScopedRequestCancellations } from './sender-scoped-request-cancellation'
-import { discoverAiVaultHosts, type AiVaultHostDiscoveryResult } from './ai-vault-host-discovery'
-import {
-  scanRuntimeAiVaultSessions,
+  type AiVaultDeleteSessionArgs,
+  type AiVaultFirstUserPromptArgs,
+  type AiVaultHostDiscoveryResult,
+  type AiVaultListArgs,
+  type AiVaultListResult,
+  type AiVaultSessionSources,
+  type AiVaultSessionTitlesArgs,
+  type AiVaultSessionTitlesResult,
+  type AiVaultSubagentListArgs,
+  type AiVaultSubagentListResult,
+  type CommitMessageAgentEnvironmentResolvers,
+  type ExecutionHostScope,
   type RuntimeAiVaultHostInfo,
-  type RuntimeAiVaultScanner
-} from './ai-vault-runtime-scan'
-import {
-  invalidateAiVaultHostLegCache,
-  resetAiVaultHostLegCacheForTests,
-  scanHostLegWithCache
-} from './ai-vault-host-leg-cache'
-import { requestedAiVaultSessionDepth } from '../../shared/ai-vault-session-depth'
-import type {
-  AiVaultSessionTitlesArgs,
-  AiVaultSessionTitlesResult
-} from '../../shared/ai-vault-session-title'
-import {
-  resolveAiVaultSessionTitlesByHost,
+  type RuntimeAiVaultScanner,
   type RuntimeAiVaultSessionTitleResolver
-} from './ai-vault-session-title-routing'
-import { projectStructuredAiVaultSessions } from '../ai-vault/structured-session-ownership'
+} from './ai-vault-ipc-dependencies'
 
 const AI_VAULT_ALL_HOST_RUNTIME_TIMEOUT_MS = 3_000
 // Why: a remote home with many agent roots routinely needs seconds to walk,
@@ -74,6 +63,7 @@ type AiVaultHandlerOptions = AiVaultSessionSources &
     getActiveRuntimeAiVaultHostInfos?: () => readonly RuntimeAiVaultHostInfo[]
     scanRuntimeAiVaultSessions?: RuntimeAiVaultScanner
     resolveRuntimeAiVaultSessionTitles?: RuntimeAiVaultSessionTitleResolver
+    commitMessageAgentEnv?: CommitMessageAgentEnvironmentResolvers
   }
 
 let scanCoordinator = new AiVaultScanCoordinator()
@@ -320,7 +310,7 @@ export function registerAiVaultHandlers(options: AiVaultHandlerOptions = {}): vo
   ipcMain.handle('aiVault:getFirstUserPrompt', (_event, args?: AiVaultFirstUserPromptArgs) =>
     handleAiVaultGetFirstUserPrompt(args)
   )
-  registerAiVaultHistoryHandlers()
+  registerAiVaultHistoryHandlers(options.commitMessageAgentEnv)
   registerAiVaultDeleteHandler(aiVaultDeleteDeps)
   // macOS app activation skips DOM focus events, so emit the refresh signal here.
   app.on('browser-window-focus', (_event, window) => {

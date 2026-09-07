@@ -23,6 +23,13 @@ import type {
   AiVaultHistorySearchResult
 } from '../../shared/ai-vault-history-types'
 import type { AiVaultAgent } from '../../shared/ai-vault-types'
+import type {
+  ConversationKnowledgeItem,
+  ConversationKnowledgeIndexStatus,
+  ConversationKnowledgeListResult,
+  GenerateConversationKnowledgeRequest,
+  StartConversationKnowledgeIndexRequest
+} from '../../shared/conversation-knowledge-items'
 
 export type AiVaultApi = {
   listSessions: (args?: AiVaultListArgs) => Promise<AiVaultListResult>
@@ -32,6 +39,12 @@ export type AiVaultApi = {
     sessionId: string
     limit?: number
   }) => Promise<AiVaultHistoryReadResult>
+  enrichHistory: (args: GenerateConversationKnowledgeRequest) => Promise<ConversationKnowledgeItem>
+  listKnowledge: (args?: { query?: string }) => Promise<ConversationKnowledgeListResult>
+  startKnowledgeIndex: (
+    args: StartConversationKnowledgeIndexRequest
+  ) => Promise<ConversationKnowledgeIndexStatus>
+  getKnowledgeIndexStatus: () => Promise<ConversationKnowledgeIndexStatus>
   resolveSessionTitles: (args: AiVaultSessionTitlesArgs) => Promise<AiVaultSessionTitlesResult>
   cancelListSessions: (args: { requestToken: string }) => Promise<void>
   prepareSessionResume: (

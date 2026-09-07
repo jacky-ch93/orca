@@ -12,6 +12,8 @@ import {
   assertLegacyAiVaultResumeAllowed,
   projectStructuredAiVaultSessions
 } from '../../../ai-vault/structured-session-ownership'
+import { getCommitMessageAgentSpec } from '../../../../shared/commit-message-agent-spec'
+import type { TuiAgent } from '../../../../shared/tui-agent'
 
 // Why: bound limit + scopePaths so a client cannot force an unbounded scan.
 // Each scopePath is a host-local match prefix (validated/capped, never used for
@@ -94,6 +96,35 @@ export const AiVaultHistoryReadParams = z.object({
   limit: z.number().int().positive().max(AI_VAULT_HISTORY_READ_LIMIT_MAX).optional()
 })
 
+const knowledgeGeneratorAgentSchema = z.string().transform((value, ctx): TuiAgent => {
+  if (getCommitMessageAgentSpec(value as TuiAgent)) {
+    return value as TuiAgent
+  }
+  ctx.addIssue({ code: 'custom', message: 'Agent does not support background generation' })
+  return z.NEVER
+})
+
+export const AiVaultKnowledgeListParams = z.object({
+  query: z.string().max(AI_VAULT_HISTORY_QUERY_MAX_LENGTH).optional()
+})
+
+export const AiVaultKnowledgeGenerateParams = z.object({
+  sourceAgent: z.enum(AI_VAULT_AGENTS),
+  sessionId: z.string().min(1).max(512),
+  generatorAgent: knowledgeGeneratorAgentSchema,
+  generatorModel: z.string().min(1).max(256).nullable().optional()
+})
+
+export const AiVaultKnowledgeIndexParams = z.object({
+  generatorAgent: knowledgeGeneratorAgentSchema,
+  generatorModel: z.string().min(1).max(256),
+  scopePaths: z
+    .array(z.string().min(1).max(AI_VAULT_SCOPE_PATH_MAX_LENGTH))
+    .max(AI_VAULT_SCOPE_PATHS_MAX_COUNT)
+    .optional(),
+  force: OptionalBoolean
+})
+
 export const AI_VAULT_METHODS: RpcMethod[] = [
   defineMethod({
     name: 'aiVault.searchHistory',
@@ -104,6 +135,26 @@ export const AI_VAULT_METHODS: RpcMethod[] = [
     name: 'aiVault.readHistory',
     params: AiVaultHistoryReadParams,
     handler: (params, { runtime }) => runtime.readAiVaultHistorySession(params)
+  }),
+  defineMethod({
+    name: 'aiVault.listKnowledge',
+    params: AiVaultKnowledgeListParams,
+    handler: (params, { runtime }) => runtime.listConversationKnowledge(params)
+  }),
+  defineMethod({
+    name: 'aiVault.enrichHistory',
+    params: AiVaultKnowledgeGenerateParams,
+    handler: (params, { runtime }) => runtime.enrichConversationKnowledge(params)
+  }),
+  defineMethod({
+    name: 'aiVault.startKnowledgeIndex',
+    params: AiVaultKnowledgeIndexParams,
+    handler: (params, { runtime }) => runtime.startConversationKnowledgeIndex(params)
+  }),
+  defineMethod({
+    name: 'aiVault.getKnowledgeIndexStatus',
+    params: z.object({}),
+    handler: (_params, { runtime }) => runtime.getConversationKnowledgeIndexStatus()
   }),
   defineMethod({
     name: 'aiVault.resolveSessionTitles',

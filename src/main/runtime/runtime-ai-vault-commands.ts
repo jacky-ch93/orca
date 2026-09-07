@@ -15,12 +15,26 @@ import {
   type AiVaultHistorySearchResult
 } from '../ai-vault/session-history'
 import { resolveLocalAiVaultSessionTitles } from '../ai-vault/session-title-resolver'
+import type {
+  ConversationKnowledgeIndexStatus,
+  ConversationKnowledgeItem,
+  ConversationKnowledgeListResult,
+  GenerateConversationKnowledgeRequest,
+  StartConversationKnowledgeIndexRequest
+} from '../../shared/conversation-knowledge-items'
+import { searchConversationKnowledgeItems } from '../../shared/conversation-knowledge-items'
+import { getConversationKnowledgeService } from '../ai-vault/conversation-knowledge-service-registry'
+import type { CommitMessageAgentEnvironmentResolvers } from '../text-generation/commit-message-agent-environment'
 
 export class RuntimeAiVaultCommands {
   constructor(
     private readonly getPrepareResume: () =>
       | ((args: AiVaultPrepareSessionResumeArgs) => Promise<AiVaultPrepareSessionResumeResult>)
-      | null
+      | null,
+    private readonly getUserDataPath: () => string,
+    private readonly getEnvironmentResolvers: () =>
+      | CommitMessageAgentEnvironmentResolvers
+      | undefined
   ) {}
 
   list(args?: AiVaultListArgs): Promise<AiVaultListResult> {
@@ -43,6 +57,25 @@ export class RuntimeAiVaultCommands {
     return readAiVaultHistorySession(args)
   }
 
+  async listKnowledge(args?: { query?: string }): Promise<ConversationKnowledgeListResult> {
+    const items = await this.knowledgeService().list()
+    return { items: searchConversationKnowledgeItems(items, args?.query ?? '') }
+  }
+
+  enrichKnowledge(args: GenerateConversationKnowledgeRequest): Promise<ConversationKnowledgeItem> {
+    return this.knowledgeService().generate(args)
+  }
+
+  startKnowledgeIndex(
+    args: StartConversationKnowledgeIndexRequest
+  ): Promise<ConversationKnowledgeIndexStatus> {
+    return this.knowledgeService().startIndex(args)
+  }
+
+  getKnowledgeIndexStatus(): ConversationKnowledgeIndexStatus {
+    return this.knowledgeService().getIndexStatus()
+  }
+
   resolveTitles(
     requests: AiVaultSessionTitleRequest[],
     signal?: AbortSignal
@@ -52,5 +85,12 @@ export class RuntimeAiVaultCommands {
 
   prepare(args: AiVaultPrepareSessionResumeArgs): Promise<AiVaultPrepareSessionResumeResult> {
     return this.getPrepareResume()?.(args) ?? Promise.resolve({ useRealCodexHome: false })
+  }
+
+  private knowledgeService() {
+    return getConversationKnowledgeService({
+      userDataPath: this.getUserDataPath(),
+      getEnvironmentResolvers: this.getEnvironmentResolvers
+    })
   }
 }
