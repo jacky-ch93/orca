@@ -186,10 +186,12 @@ function KnowledgeDetail({ item }: { item: ConversationKnowledgeItem }): React.J
     store.setConversationKnowledgeDrawerOpen(false)
     store.setRightSidebarTab('vault')
     store.setRightSidebarOpen(true)
-    // Let the right-sidebar panel mount before delivering the one-shot target.
-    window.setTimeout(() => {
+    // The vault is lazy-loaded; retry once after its suspense boundary can mount.
+    const dispatchSelection = (): void => {
       window.dispatchEvent(new Event('orca:conversation-history-select'))
-    }, 0)
+    }
+    window.setTimeout(dispatchSelection, 0)
+    window.setTimeout(dispatchSelection, 120)
   }
   return (
     <article className="space-y-4 p-4">
