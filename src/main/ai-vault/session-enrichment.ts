@@ -10,6 +10,10 @@ import {
 } from '../text-generation/commit-message-agent-environment'
 import { runLocalPlanForAgent } from '../text-generation/source-control-local-generation'
 
+const MAX_SUMMARY_MESSAGES = 12
+const MAX_SUMMARY_MESSAGE_CHARS = 1_200
+const MAX_SUMMARY_TRANSCRIPT_CHARS = 12_000
+
 export async function enrichAiVaultSession(input: {
   session: AiVaultSession
   messages: readonly { role: string; text: string }[]
@@ -23,20 +27,20 @@ export async function enrichAiVaultSession(input: {
     throw new Error(`Agent "${input.agent}" does not support non-interactive generation.`)
   }
   const model = input.model?.trim() || spec.defaultModelId
-  const transcript = input.messages
+  const transcript = selectConversationSummaryMessages(input.messages)
     .filter((message) => message.text.trim() && ['user', 'assistant'].includes(message.role))
-    .slice(0, 40)
     .map(
       (message) =>
-        `${message.role.toUpperCase()}: ${redactConversationText(message.text.slice(0, 4000))}`
+        `${message.role.toUpperCase()}: ${redactConversationText(message.text.slice(0, MAX_SUMMARY_MESSAGE_CHARS))}`
     )
     .join('\n\n')
+    .slice(0, MAX_SUMMARY_TRANSCRIPT_CHARS)
   const prompt = [
     'You are an information curator for a developer workspace.',
     `Write all human-readable fields in ${summaryLanguage(input.language)}.`,
     'Summarize the conversation below as strict JSON only, with this schema:',
     '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"]}',
-    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes.',
+    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters.',
     `Conversation title: ${input.session.title}`,
     transcript || '(conversation has no readable user/assistant messages)'
   ].join('\n\n')
@@ -77,6 +81,47 @@ export async function enrichAiVaultSession(input: {
   }
   const parsed = parseConversationKnowledgeOutput(result.rawOutput)
   return { ...parsed, agent: input.agent, model: effectiveModel }
+}
+
+export function selectConversationSummaryMessages(
+  messages: readonly { role: string; text: string }[]
+): readonly { role: string; text: string }[] {
+  const readable = messages.filter(
+    (message) => message.text.trim() && ['user', 'assistant'].includes(message.role)
+  )
+  if (readable.length <= MAX_SUMMARY_MESSAGES) {
+    return readable
+  }
+  const headCount = 3
+  const tailCount = 3
+  const middleBudget = MAX_SUMMARY_MESSAGES - headCount - tailCount
+  const middleStart = headCount
+  const middleEnd = readable.length - tailCount
+  const middle = readable.slice(middleStart, middleEnd)
+  const selectedMiddleIndexes = new Set<number>()
+  for (let index = 0; index < middleBudget; index += 1) {
+    const position = Math.round((index * (middle.length - 1)) / (middleBudget - 1))
+    selectedMiddleIndexes.add(position)
+  }
+  // Replace evenly sampled assistant turns with user turns when possible.
+  const userIndexes = middle
+    .map((message, index) => (message.role === 'user' ? index : -1))
+    .filter((index) => index >= 0)
+  for (const userIndex of userIndexes) {
+    if (selectedMiddleIndexes.has(userIndex)) {
+      continue
+    }
+    const replaceable = [...selectedMiddleIndexes].find((index) => middle[index]?.role !== 'user')
+    if (replaceable === undefined) {
+      break
+    }
+    selectedMiddleIndexes.delete(replaceable)
+    selectedMiddleIndexes.add(userIndex)
+  }
+  const selectedMiddle = [...selectedMiddleIndexes]
+    .sort((left, right) => left - right)
+    .map((index) => middle[index])
+  return [...readable.slice(0, headCount), ...selectedMiddle, ...readable.slice(-tailCount)]
 }
 
 function summaryLanguage(language: string | undefined): string {

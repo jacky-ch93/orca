@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   parseConversationKnowledgeOutput,
   redactConversationText,
-  resolveConversationKnowledgeModel
+  resolveConversationKnowledgeModel,
+  selectConversationSummaryMessages
 } from './session-enrichment'
 
 describe('parseConversationKnowledgeOutput', () => {
@@ -39,5 +40,21 @@ describe('parseConversationKnowledgeOutput', () => {
     expect(() => parseConversationKnowledgeOutput('Here is the summary: ...')).toThrow(
       'structured knowledge JSON'
     )
+  })
+
+  it('samples the beginning, dynamic middle, and ending of long sessions', () => {
+    const messages = Array.from({ length: 30 }, (_, index) => ({
+      role: index % 2 === 0 ? 'user' : 'assistant',
+      text: `message-${index}`
+    }))
+    const selected = selectConversationSummaryMessages(messages)
+    expect(selected).toHaveLength(12)
+    const selectedText = selected.map((message) => message.text)
+    expect(selectedText.slice(0, 3)).toEqual(['message-0', 'message-1', 'message-2'])
+    expect(selectedText.slice(-3)).toEqual(['message-27', 'message-28', 'message-29'])
+    const middle = selectedText.slice(3, -3).map((text) => Number(text.slice(8)))
+    expect(middle.length).toBe(6)
+    expect(new Set(middle).size).toBe(6)
+    expect(middle.some((index) => index > 10 && index < 20)).toBe(true)
   })
 })

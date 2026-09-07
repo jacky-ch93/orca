@@ -8,6 +8,8 @@ import {
 import type { TuiAgent } from '../../shared/tui-agent'
 import { resolveConversationKnowledgeModel, type enrichAiVaultSession } from './session-enrichment'
 
+const MAX_CONCURRENT_SUMMARIES = 2
+
 type KnowledgeStore = {
   list(): Promise<ConversationKnowledgeItem[]>
   upsert(item: ConversationKnowledgeItem): Promise<void>
@@ -129,20 +131,27 @@ export class ConversationKnowledgeService {
     sessions: readonly AiVaultSession[],
     args: { generatorAgent: TuiAgent; generatorModel: string; language?: string }
   ): Promise<void> {
-    for (const session of sessions) {
-      try {
-        await this.generateFromSession(session, {
-          sourceAgent: session.agent,
-          sessionId: session.sessionId,
-          generatorAgent: args.generatorAgent,
-          generatorModel: args.generatorModel,
-          language: args.language
-        })
-        this.indexStatus = { ...this.indexStatus, completed: this.indexStatus.completed + 1 }
-      } catch {
-        this.indexStatus = { ...this.indexStatus, failed: this.indexStatus.failed + 1 }
+    let nextIndex = 0
+    const worker = async (): Promise<void> => {
+      while (nextIndex < sessions.length) {
+        const session = sessions[nextIndex++]
+        try {
+          await this.generateFromSession(session, {
+            sourceAgent: session.agent,
+            sessionId: session.sessionId,
+            generatorAgent: args.generatorAgent,
+            generatorModel: args.generatorModel,
+            language: args.language
+          })
+          this.indexStatus = { ...this.indexStatus, completed: this.indexStatus.completed + 1 }
+        } catch {
+          this.indexStatus = { ...this.indexStatus, failed: this.indexStatus.failed + 1 }
+        }
       }
     }
+    await Promise.all(
+      Array.from({ length: Math.min(MAX_CONCURRENT_SUMMARIES, sessions.length) }, () => worker())
+    )
   }
 
   private async generateFromSession(
@@ -160,6 +169,12 @@ export class ConversationKnowledgeService {
       model: args.generatorModel,
       language: args.language
     })
+    const knowledgeTitle = resolveKnowledgeTitle(
+      enrichment.title,
+      session.title,
+      enrichment.summary,
+      history.messages
+    )
     const item: ConversationKnowledgeItem = {
       id: `${session.executionHostId}:${session.agent}:${session.sessionId}`,
       source: {
@@ -171,7 +186,7 @@ export class ConversationKnowledgeService {
         updatedAt: session.updatedAt
       },
       knowledge: {
-        title: enrichment.title ?? deriveKnowledgeTitle(session.title, enrichment.summary),
+        title: knowledgeTitle,
         summary: enrichment.summary,
         topics: enrichment.topics,
         conclusions: enrichment.conclusions,
@@ -207,11 +222,7 @@ function pathContains(scopePath: string, candidatePath: string): boolean {
 
 function deriveKnowledgeTitle(sourceTitle: string, summary: string): string {
   const normalized = sourceTitle.trim()
-  if (
-    normalized &&
-    !/^You are an information curator/i.test(normalized) &&
-    normalized.length <= 120
-  ) {
+  if (isSpecificKnowledgeTitle(normalized)) {
     return normalized
   }
   const sentence = summary
@@ -219,4 +230,31 @@ function deriveKnowledgeTitle(sourceTitle: string, summary: string): string {
     .split(/(?<=[.!?。！？])\s+/u)[0]
     ?.trim()
   return (sentence || 'Conversation knowledge').slice(0, 120)
+}
+
+function resolveKnowledgeTitle(
+  generatedTitle: string | undefined,
+  sourceTitle: string,
+  summary: string,
+  messages: readonly { role: string; text: string }[]
+): string {
+  if (generatedTitle && isSpecificKnowledgeTitle(generatedTitle)) {
+    return generatedTitle.slice(0, 120)
+  }
+  const userMessage = messages.find((message) => message.role === 'user')?.text.trim()
+  const firstLine = userMessage?.split(/\r?\n/u)[0]?.trim()
+  if (firstLine && isSpecificKnowledgeTitle(firstLine)) {
+    return firstLine.slice(0, 120)
+  }
+  return deriveKnowledgeTitle(sourceTitle, summary)
+}
+
+function isSpecificKnowledgeTitle(value: string): boolean {
+  return value.length > 0 && value.length <= 120 && !isGenericKnowledgeTitle(value)
+}
+
+function isGenericKnowledgeTitle(value: string): boolean {
+  return /^(?:you are an information curator|summarize the conversation|short descriptive title|conversation knowledge)/i.test(
+    value.trim()
+  )
 }

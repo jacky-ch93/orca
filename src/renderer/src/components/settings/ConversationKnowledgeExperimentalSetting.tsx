@@ -1,6 +1,10 @@
+import { useEffect, useMemo, useState } from 'react'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import { ALL_TUI_AGENTS, TUI_AGENT_DISPLAY_NAMES } from '../../../../shared/tui-agent-display-names'
-import { getCommitMessageAgentSpec } from '../../../../shared/commit-message-agent-spec'
+import {
+  getCommitMessageAgentSpec,
+  type CommitMessageModelCapability
+} from '../../../../shared/commit-message-agent-spec'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { useAppStore } from '../../store'
 import { translate } from '@/i18n/i18n'
@@ -28,9 +32,72 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
   )
     ? (settings.conversationKnowledgeEnrichmentAgent as TuiAgent)
     : null
-  const knowledgeModels = selectedKnowledgeAgent
-    ? (getCommitMessageAgentSpec(selectedKnowledgeAgent)?.models ?? [])
-    : []
+  const [discoveredModels, setDiscoveredModels] = useState<
+    Partial<Record<TuiAgent, CommitMessageModelCapability[]>>
+  >({})
+  const knowledgeAgentKey = knowledgeAgents.join('|')
+  const shouldDiscoverModels =
+    settings.conversationKnowledgeEnabled === true &&
+    settings.conversationKnowledgeEnrichmentEnabled === true
+
+  // Refresh the local CLI catalogs so custom providers (for example MiniMax
+  // behind Claude-compatible configuration) appear alongside static fallbacks.
+  useEffect(() => {
+    let cancelled = false
+    const discover = async () => {
+      const agents = knowledgeAgentKey ? (knowledgeAgentKey.split('|') as TuiAgent[]) : []
+      const results = await Promise.all(
+        agents.map(async (agent) => {
+          try {
+            const result = await window.api.git.discoverCommitMessageModels({ agentId: agent })
+            return result.success ? ([agent, result.models] as const) : null
+          } catch {
+            return null
+          }
+        })
+      )
+      if (cancelled) {
+        return
+      }
+      setDiscoveredModels((current) => {
+        const next = { ...current }
+        for (const result of results) {
+          if (result) {
+            next[result[0]] = result[1]
+          }
+        }
+        return next
+      })
+    }
+    if (shouldDiscoverModels && knowledgeAgentKey) {
+      void discover()
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [knowledgeAgentKey, shouldDiscoverModels])
+
+  const knowledgeModels = useMemo(() => {
+    if (!selectedKnowledgeAgent) {
+      return []
+    }
+    const specModels = getCommitMessageAgentSpec(selectedKnowledgeAgent)?.models ?? []
+    const persistedModels =
+      settings.sourceControlAi?.discoveredModelsByAgent?.[selectedKnowledgeAgent] ?? []
+    const runtimeModels = discoveredModels[selectedKnowledgeAgent] ?? []
+    const models = [...runtimeModels, ...persistedModels, ...specModels]
+    const unique = new Map(models.map((model) => [model.id, model]))
+    const configuredModel = settings.conversationKnowledgeEnrichmentModel
+    if (configuredModel && !unique.has(configuredModel)) {
+      unique.set(configuredModel, { id: configuredModel, label: configuredModel })
+    }
+    return [...unique.values()]
+  }, [
+    discoveredModels,
+    selectedKnowledgeAgent,
+    settings.conversationKnowledgeEnrichmentModel,
+    settings.sourceControlAi?.discoveredModelsByAgent
+  ])
 
   return (
     <SearchableSetting

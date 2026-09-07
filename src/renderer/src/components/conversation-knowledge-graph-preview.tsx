@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useAllWorktrees } from '@/store/selectors'
 import {
@@ -34,6 +34,12 @@ export function ConversationKnowledgeGraphPreview({
   const positions = useMemo(() => positionGraphNodes(visibleGraph), [visibleGraph])
   const positionById = useMemo(() => new Map(positions.map((node) => [node.id, node])), [positions])
   const height = Math.max(240, ...positions.map((node) => node.y + NODE_HEIGHT + 18))
+
+  useEffect(() => {
+    if (selectedItemId) {
+      setFocusedNodeId(`knowledge:${selectedItemId}`)
+    }
+  }, [selectedItemId])
 
   if (!positions.length) {
     return (
@@ -78,6 +84,7 @@ export function ConversationKnowledgeGraphPreview({
             data-current={node.item?.id === selectedItemId || undefined}
             onClick={() => {
               if (node.item) {
+                setFocusedNodeId(node.id)
                 onSelectItem(node.item)
               } else {
                 setFocusedNodeId((current) => (current === node.id ? null : node.id))
