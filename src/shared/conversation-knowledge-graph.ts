@@ -34,7 +34,7 @@ export function buildConversationKnowledgeGraph({
     nodes.set(knowledgeId, {
       id: knowledgeId,
       type: 'knowledge',
-      label: item.source.title,
+      label: item.knowledge.title ?? item.source.title,
       itemCount: 1,
       item
     })

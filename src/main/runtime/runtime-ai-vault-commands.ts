@@ -57,8 +57,11 @@ export class RuntimeAiVaultCommands {
     return readAiVaultHistorySession(args)
   }
 
-  async listKnowledge(args?: { query?: string }): Promise<ConversationKnowledgeListResult> {
-    const items = await this.knowledgeService().list()
+  async listKnowledge(args?: {
+    query?: string
+    scopePaths?: string[]
+  }): Promise<ConversationKnowledgeListResult> {
+    const items = await this.knowledgeService().list(args?.scopePaths)
     return { items: searchConversationKnowledgeItems(items, args?.query ?? '') }
   }
 

@@ -92,7 +92,7 @@ export function ConversationKnowledgeGraphPreview({
             </span>
             {node.item ? (
               <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
-                {node.item.knowledge.summary}
+                {node.item.knowledge.title ?? node.item.knowledge.summary}
               </span>
             ) : null}
           </button>

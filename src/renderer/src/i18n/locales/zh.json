@@ -1,4 +1,8 @@
 {
+  "conversationKnowledge": {
+    "name": "会话知识",
+    "graph": "会话知识图谱"
+  },
   "app": {
     "recoverableError": {
       "rootTitle": "Orca 遇到渲染器错误。",

@@ -13,6 +13,7 @@ export type ConversationKnowledgeItem = {
     updatedAt: string | null
   }
   knowledge: {
+    title?: string
     summary: string
     topics: string[]
     conclusions: string[]
@@ -34,6 +35,7 @@ export type GenerateConversationKnowledgeRequest = {
   sessionId: string
   generatorAgent: TuiAgent
   generatorModel?: string | null
+  language?: string
 }
 
 export type StartConversationKnowledgeIndexRequest = {
@@ -41,6 +43,7 @@ export type StartConversationKnowledgeIndexRequest = {
   generatorModel: string
   scopePaths?: string[]
   force?: boolean
+  language?: string
 }
 
 export type ConversationKnowledgeIndexStatus = {

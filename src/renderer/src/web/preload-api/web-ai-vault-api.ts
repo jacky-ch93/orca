@@ -39,7 +39,7 @@ export function createWebAiVaultApi(): NonNullable<Partial<PreloadApi>['aiVault'
       callRuntimeResult<AiVaultHistoryReadResult>('aiVault.readHistory', args),
     enrichHistory: (args: GenerateConversationKnowledgeRequest) =>
       callRuntimeResult<ConversationKnowledgeItem>('aiVault.enrichHistory', args),
-    listKnowledge: (args?: { query?: string }) =>
+    listKnowledge: (args?: { query?: string; scopePaths?: string[] }) =>
       callRuntimeResult<ConversationKnowledgeListResult>('aiVault.listKnowledge', args ?? {}),
     startKnowledgeIndex: (args: StartConversationKnowledgeIndexRequest) =>
       callRuntimeResult<ConversationKnowledgeIndexStatus>('aiVault.startKnowledgeIndex', args),

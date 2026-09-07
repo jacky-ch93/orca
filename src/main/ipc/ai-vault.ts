@@ -37,6 +37,7 @@ import {
   type AiVaultHostDiscoveryResult,
   type AiVaultListArgs,
   type AiVaultListResult,
+  type AiVaultResumeHandlerOptions,
   type AiVaultSessionSources,
   type AiVaultSessionTitlesArgs,
   type AiVaultSessionTitlesResult,

@@ -25,6 +25,7 @@ export type GenerateConversationKnowledgeArgs = {
   sessionId: string
   generatorAgent: TuiAgent
   generatorModel?: string | null
+  language?: string
 }
 
 export class ConversationKnowledgeService {
@@ -35,6 +36,7 @@ export class ConversationKnowledgeService {
     failed: 0
   }
   private indexPromise: Promise<void> | null = null
+  private indexConfig: string | null = null
 
   constructor(private readonly dependencies: ConversationKnowledgeServiceDependencies) {}
 
@@ -54,9 +56,20 @@ export class ConversationKnowledgeService {
     generatorModel: string
     scopePaths?: string[]
     force?: boolean
+    language?: string
   }): Promise<ConversationKnowledgeIndexStatus> {
+    const configKey = JSON.stringify({
+      generatorAgent: args.generatorAgent,
+      generatorModel: resolveConversationKnowledgeModel(args.generatorAgent, args.generatorModel),
+      scopePaths: args.scopePaths ?? [],
+      language: args.language ?? 'en'
+    })
     if (this.indexPromise) {
-      return this.indexStatus
+      if (this.indexConfig === configKey) {
+        return this.indexStatus
+      }
+      await this.indexPromise
+      return this.startIndex(args)
     }
     const [sessions, existingItems] = await Promise.all([
       this.dependencies.listSessions(),
@@ -98,9 +111,11 @@ export class ConversationKnowledgeService {
       failed: 0
     }
     if (pendingSessions.length) {
+      this.indexConfig = configKey
       this.indexPromise = this.runIndex(pendingSessions, args).finally(() => {
         this.indexStatus = { ...this.indexStatus, state: 'idle' }
         this.indexPromise = null
+        this.indexConfig = null
       })
     }
     return this.indexStatus
@@ -112,7 +127,7 @@ export class ConversationKnowledgeService {
 
   private async runIndex(
     sessions: readonly AiVaultSession[],
-    args: { generatorAgent: TuiAgent; generatorModel: string }
+    args: { generatorAgent: TuiAgent; generatorModel: string; language?: string }
   ): Promise<void> {
     for (const session of sessions) {
       try {
@@ -120,7 +135,8 @@ export class ConversationKnowledgeService {
           sourceAgent: session.agent,
           sessionId: session.sessionId,
           generatorAgent: args.generatorAgent,
-          generatorModel: args.generatorModel
+          generatorModel: args.generatorModel,
+          language: args.language
         })
         this.indexStatus = { ...this.indexStatus, completed: this.indexStatus.completed + 1 }
       } catch {
@@ -141,7 +157,8 @@ export class ConversationKnowledgeService {
       session,
       messages: history.messages,
       agent: args.generatorAgent,
-      model: args.generatorModel
+      model: args.generatorModel,
+      language: args.language
     })
     const item: ConversationKnowledgeItem = {
       id: `${session.executionHostId}:${session.agent}:${session.sessionId}`,
@@ -154,6 +171,7 @@ export class ConversationKnowledgeService {
         updatedAt: session.updatedAt
       },
       knowledge: {
+        title: enrichment.title ?? deriveKnowledgeTitle(session.title, enrichment.summary),
         summary: enrichment.summary,
         topics: enrichment.topics,
         conclusions: enrichment.conclusions,
@@ -169,8 +187,15 @@ export class ConversationKnowledgeService {
     return item
   }
 
-  list(): Promise<ConversationKnowledgeItem[]> {
-    return this.dependencies.store.list()
+  async list(scopePaths?: readonly string[]): Promise<ConversationKnowledgeItem[]> {
+    const items = await this.dependencies.store.list()
+    if (!scopePaths?.length) {
+      return items
+    }
+    return items.filter(
+      (item) =>
+        item.source.cwd !== null && scopePaths.some((path) => pathContains(path, item.source.cwd!))
+    )
   }
 }
 
@@ -178,4 +203,20 @@ function pathContains(scopePath: string, candidatePath: string): boolean {
   const scope = scopePath.replaceAll('\\', '/').replace(/\/+$/, '').toLocaleLowerCase()
   const candidate = candidatePath.replaceAll('\\', '/').replace(/\/+$/, '').toLocaleLowerCase()
   return candidate === scope || candidate.startsWith(`${scope}/`)
+}
+
+function deriveKnowledgeTitle(sourceTitle: string, summary: string): string {
+  const normalized = sourceTitle.trim()
+  if (
+    normalized &&
+    !/^You are an information curator/i.test(normalized) &&
+    normalized.length <= 120
+  ) {
+    return normalized
+  }
+  const sentence = summary
+    .trim()
+    .split(/(?<=[.!?。！？])\s+/u)[0]
+    ?.trim()
+  return (sentence || 'Conversation knowledge').slice(0, 120)
 }

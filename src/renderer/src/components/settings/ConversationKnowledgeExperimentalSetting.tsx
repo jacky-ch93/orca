@@ -34,10 +34,7 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
 
   return (
     <SearchableSetting
-      title={translate(
-        'auto.components.settings.ExperimentalPane.conversationKnowledge',
-        'Conversation Knowledge'
-      )}
+      title={translate('conversationKnowledge.name', '会话知识')}
       description={translate(
         'auto.components.settings.ExperimentalPane.conversationKnowledgeDescription',
         'Build a searchable knowledge layer from agent session history.'
@@ -47,12 +44,7 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 shrink space-y-0.5">
-          <Label>
-            {translate(
-              'auto.components.settings.ExperimentalPane.conversationKnowledge',
-              'Conversation Knowledge'
-            )}
-          </Label>
+          <Label>{translate('conversationKnowledge.name', '会话知识')}</Label>
           <p className="text-xs text-muted-foreground">
             {translate(
               'auto.components.settings.ExperimentalPane.conversationKnowledgeCopy',
@@ -64,7 +56,7 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
           checked={settings.conversationKnowledgeEnabled === true}
           ariaLabel={translate(
             'auto.components.settings.ExperimentalPane.conversationKnowledgeToggle',
-            'Toggle Conversation Knowledge'
+            '启用会话知识'
           )}
           onChange={() =>
             updateSettings({

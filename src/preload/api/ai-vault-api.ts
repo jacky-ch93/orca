@@ -40,7 +40,10 @@ export type AiVaultApi = {
     limit?: number
   }) => Promise<AiVaultHistoryReadResult>
   enrichHistory: (args: GenerateConversationKnowledgeRequest) => Promise<ConversationKnowledgeItem>
-  listKnowledge: (args?: { query?: string }) => Promise<ConversationKnowledgeListResult>
+  listKnowledge: (args?: {
+    query?: string
+    scopePaths?: string[]
+  }) => Promise<ConversationKnowledgeListResult>
   startKnowledgeIndex: (
     args: StartConversationKnowledgeIndexRequest
   ) => Promise<ConversationKnowledgeIndexStatus>

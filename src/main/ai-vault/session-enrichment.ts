@@ -15,6 +15,7 @@ export async function enrichAiVaultSession(input: {
   messages: readonly { role: string; text: string }[]
   agent: TuiAgent
   model?: string | null
+  language?: string
   environmentResolvers?: CommitMessageAgentEnvironmentResolvers
 }): Promise<AiVaultSessionEnrichment> {
   const spec = getCommitMessageAgentSpec(input.agent)
@@ -32,8 +33,9 @@ export async function enrichAiVaultSession(input: {
     .join('\n\n')
   const prompt = [
     'You are an information curator for a developer workspace.',
+    `Write all human-readable fields in ${summaryLanguage(input.language)}.`,
     'Summarize the conversation below as strict JSON only, with this schema:',
-    '{"summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"]}',
+    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"]}',
     'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes.',
     `Conversation title: ${input.session.title}`,
     transcript || '(conversation has no readable user/assistant messages)'
@@ -77,6 +79,23 @@ export async function enrichAiVaultSession(input: {
   return { ...parsed, agent: input.agent, model: effectiveModel }
 }
 
+function summaryLanguage(language: string | undefined): string {
+  const normalized = language?.trim().toLowerCase() ?? ''
+  if (normalized.startsWith('zh')) {
+    return 'Simplified Chinese'
+  }
+  if (normalized.startsWith('ja')) {
+    return 'Japanese'
+  }
+  if (normalized.startsWith('ko')) {
+    return 'Korean'
+  }
+  if (normalized.startsWith('es')) {
+    return 'Spanish'
+  }
+  return 'English'
+}
+
 export function resolveConversationKnowledgeModel(agent: TuiAgent, model: string): string {
   const fallback = codexBackgroundFallbackModel(agent, model)
   return fallback ?? model
@@ -97,7 +116,7 @@ function isUnsupportedModelFailure(result: { failureOutput?: { stderr: string } 
 
 export function parseConversationKnowledgeOutput(
   rawOutput: string
-): Pick<AiVaultSessionEnrichment, 'summary' | 'topics' | 'conclusions' | 'entities'> {
+): Pick<AiVaultSessionEnrichment, 'title' | 'summary' | 'topics' | 'conclusions' | 'entities'> {
   const text = rawOutput
     .trim()
     .replace(/^```(?:json)?\s*/i, '')
@@ -112,6 +131,7 @@ export function parseConversationKnowledgeOutput(
     throw new Error('Agent did not return structured knowledge JSON.')
   }
   return {
+    title: typeof value.title === 'string' ? value.title.trim().slice(0, 120) : undefined,
     summary: value.summary.trim().slice(0, 2_000),
     topics: normalizeLabels(value.topics, 12),
     conclusions: normalizeLabels(value.conclusions, 12),
@@ -132,6 +152,7 @@ export function redactConversationText(text: string): string {
 }
 
 function isEnrichment(value: unknown): value is {
+  title?: string
   summary: string
   topics: string[]
   conclusions: string[]
@@ -142,6 +163,7 @@ function isEnrichment(value: unknown): value is {
   }
   const record = value as Record<string, unknown>
   return (
+    (record.title === undefined || typeof record.title === 'string') &&
     typeof record.summary === 'string' &&
     record.summary.trim().length > 0 &&
     Array.isArray(record.topics) &&

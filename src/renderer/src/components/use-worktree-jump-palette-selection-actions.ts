@@ -210,8 +210,7 @@ export function useWorktreeJumpPaletteSelectionActions({
     (item: ConversationKnowledgeItem) => {
       const store = useAppStore.getState()
       selectConversationKnowledgeItem(item)
-      store.setRightSidebarOpen(true)
-      store.setRightSidebarTab('conversation-knowledge')
+      store.setConversationKnowledgeDrawerOpen(true)
       window.dispatchEvent(new Event('orca:conversation-knowledge-select'))
       skipRestoreFocusRef.current = true
       closeModal()

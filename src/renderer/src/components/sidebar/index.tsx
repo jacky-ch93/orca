@@ -29,6 +29,9 @@ const WorktreeVisibilityDialog = lazyWithRetry(() => import('./WorktreeVisibilit
 const OrcaYamlTrustDialog = lazyWithRetry(() => import('./OrcaYamlTrustDialog'))
 const ForgetSshWorkspaceDialog = lazyWithRetry(() => import('./ForgetSshWorkspaceDialog'))
 const AgentDashboardSidebarHost = lazyWithRetry(() => import('./AgentDashboardSidebarHost'))
+const ConversationKnowledgeSidebarHost = lazyWithRetry(
+  () => import('./ConversationKnowledgeSidebarHost')
+)
 
 const MIN_WIDTH = 220
 const MAX_WIDTH = 500
@@ -266,6 +269,15 @@ function Sidebar({
             sidebarOpen={sidebarOpen}
             workspaceBoardOpen={workspaceBoardOpen}
             closeWorkspaceBoard={closeWorkspaceBoard}
+            leftSidebarStyle={leftSidebarStyle}
+            statusBarVisible={statusBarVisible}
+          />
+        </React.Suspense>
+      ) : null}
+      {settings?.conversationKnowledgeEnabled === true ? (
+        <React.Suspense fallback={null}>
+          <ConversationKnowledgeSidebarHost
+            sidebarOpen={sidebarOpen}
             leftSidebarStyle={leftSidebarStyle}
             statusBarVisible={statusBarVisible}
           />

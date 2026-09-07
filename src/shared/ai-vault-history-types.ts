@@ -28,6 +28,7 @@ export type AiVaultHistoryReadResult = {
 }
 
 export type AiVaultSessionEnrichment = {
+  title?: string
   summary: string
   topics: string[]
   conclusions: string[]

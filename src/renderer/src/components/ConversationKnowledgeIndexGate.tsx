@@ -27,6 +27,7 @@ export function ConversationKnowledgeIndexGate(): null {
       .startKnowledgeIndex({
         generatorAgent,
         generatorModel,
+        language: typeof navigator === 'undefined' ? 'en' : navigator.language,
         scopePaths: currentProjectOnly
           ? [activePath].filter((path): path is string => path !== undefined)
           : undefined

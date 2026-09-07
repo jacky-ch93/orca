@@ -39,6 +39,7 @@ export function registerAiVaultHistoryHandlers(
         sessionId?: unknown
         generatorAgent?: unknown
         generatorModel?: unknown
+        language?: unknown
       }
     ) => {
       if (!isAiVaultAgent(args?.sourceAgent) || !isGenerationAgent(args?.generatorAgent)) {
@@ -48,15 +49,22 @@ export function registerAiVaultHistoryHandlers(
         sourceAgent: args.sourceAgent,
         sessionId: typeof args?.sessionId === 'string' ? args.sessionId : '',
         generatorAgent: args.generatorAgent,
-        generatorModel: typeof args?.generatorModel === 'string' ? args.generatorModel : null
+        generatorModel: typeof args?.generatorModel === 'string' ? args.generatorModel : null,
+        language: typeof args?.language === 'string' ? args.language.slice(0, 32) : undefined
       })
     }
   )
-  ipcMain.handle('aiVault:listKnowledge', async (_event, args: { query?: unknown }) => {
-    const items = await knowledgeService().list()
-    const query = typeof args?.query === 'string' ? args.query.slice(0, 512) : ''
-    return { items: searchConversationKnowledgeItems(items, query) }
-  })
+  ipcMain.handle(
+    'aiVault:listKnowledge',
+    async (_event, args: { query?: unknown; scopePaths?: unknown }) => {
+      const scopePaths = Array.isArray(args?.scopePaths)
+        ? args.scopePaths.filter((path): path is string => typeof path === 'string').slice(0, 64)
+        : undefined
+      const items = await knowledgeService().list(scopePaths)
+      const query = typeof args?.query === 'string' ? args.query.slice(0, 512) : ''
+      return { items: searchConversationKnowledgeItems(items, query) }
+    }
+  )
   ipcMain.handle(
     'aiVault:startKnowledgeIndex',
     async (
@@ -66,6 +74,7 @@ export function registerAiVaultHistoryHandlers(
         generatorModel?: unknown
         scopePaths?: unknown
         force?: unknown
+        language?: unknown
       }
     ) => {
       if (!isGenerationAgent(args?.generatorAgent) || typeof args?.generatorModel !== 'string') {
@@ -77,7 +86,8 @@ export function registerAiVaultHistoryHandlers(
         scopePaths: Array.isArray(args.scopePaths)
           ? args.scopePaths.filter((path): path is string => typeof path === 'string').slice(0, 64)
           : undefined,
-        force: args.force === true
+        force: args.force === true,
+        language: typeof args.language === 'string' ? args.language.slice(0, 32) : undefined
       })
     }
   )

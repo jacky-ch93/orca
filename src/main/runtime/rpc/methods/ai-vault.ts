@@ -105,14 +105,19 @@ const knowledgeGeneratorAgentSchema = z.string().transform((value, ctx): TuiAgen
 })
 
 export const AiVaultKnowledgeListParams = z.object({
-  query: z.string().max(AI_VAULT_HISTORY_QUERY_MAX_LENGTH).optional()
+  query: z.string().max(AI_VAULT_HISTORY_QUERY_MAX_LENGTH).optional(),
+  scopePaths: z
+    .array(z.string().min(1).max(AI_VAULT_SCOPE_PATH_MAX_LENGTH))
+    .max(AI_VAULT_SCOPE_PATHS_MAX_COUNT)
+    .optional()
 })
 
 export const AiVaultKnowledgeGenerateParams = z.object({
   sourceAgent: z.enum(AI_VAULT_AGENTS),
   sessionId: z.string().min(1).max(512),
   generatorAgent: knowledgeGeneratorAgentSchema,
-  generatorModel: z.string().min(1).max(256).nullable().optional()
+  generatorModel: z.string().min(1).max(256).nullable().optional(),
+  language: z.string().max(32).optional()
 })
 
 export const AiVaultKnowledgeIndexParams = z.object({
@@ -122,7 +127,8 @@ export const AiVaultKnowledgeIndexParams = z.object({
     .array(z.string().min(1).max(AI_VAULT_SCOPE_PATH_MAX_LENGTH))
     .max(AI_VAULT_SCOPE_PATHS_MAX_COUNT)
     .optional(),
-  force: OptionalBoolean
+  force: OptionalBoolean,
+  language: z.string().max(32).optional()
 })
 
 export const AI_VAULT_METHODS: RpcMethod[] = [

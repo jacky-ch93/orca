@@ -7,6 +7,10 @@
       "cancel": "Keep filters"
     }
   },
+  "conversationKnowledge": {
+    "name": "Conversation Knowledge",
+    "graph": "Conversation Knowledge Graph"
+  },
   "app": {
     "recoverableError": {
       "rootTitle": "Orca hit a renderer error.",

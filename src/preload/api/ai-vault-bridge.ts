@@ -29,7 +29,7 @@ export const aiVaultApi = {
   }): Promise<unknown> => ipcRenderer.invoke('aiVault:readHistory', args),
   enrichHistory: (args: GenerateConversationKnowledgeRequest): Promise<unknown> =>
     ipcRenderer.invoke('aiVault:enrichHistory', args),
-  listKnowledge: (args?: { query?: string }): Promise<unknown> =>
+  listKnowledge: (args?: { query?: string; scopePaths?: string[] }): Promise<unknown> =>
     ipcRenderer.invoke('aiVault:listKnowledge', args),
   startKnowledgeIndex: (args: StartConversationKnowledgeIndexRequest): Promise<unknown> =>
     ipcRenderer.invoke('aiVault:startKnowledgeIndex', args),
