@@ -1,6 +1,7 @@
 import type { AiVaultHistoryReadResult } from '../../shared/ai-vault-history-types'
 import type { AiVaultAgent, AiVaultSession } from '../../shared/ai-vault-types'
 import {
+  isConversationKnowledgeGenerationTitle,
   isConversationKnowledgeItemFresh,
   type ConversationKnowledgeIndexStatus,
   type ConversationKnowledgeItem
@@ -238,7 +239,7 @@ export class ConversationKnowledgeService {
   async list(scopePaths?: readonly string[]): Promise<ConversationKnowledgeItem[]> {
     const items = await this.dependencies.store.list()
     const visibleItems = items.filter(
-      (item) => !isKnowledgeGenerationSessionTitle(item.source.title)
+      (item) => !isConversationKnowledgeGenerationTitle(item.source.title)
     )
     if (!scopePaths?.length) {
       return visibleItems
@@ -251,13 +252,7 @@ export class ConversationKnowledgeService {
 }
 
 function isKnowledgeGenerationSession(session: AiVaultSession): boolean {
-  return isKnowledgeGenerationSessionTitle(session.title)
-}
-
-function isKnowledgeGenerationSessionTitle(title: string): boolean {
-  return /^(?:you are an information curator for a developer workspace|summarize the conversation below as strict json)/i.test(
-    title.trim()
-  )
+  return isConversationKnowledgeGenerationTitle(session.title)
 }
 
 function isCanceledGeneration(error: unknown): boolean {

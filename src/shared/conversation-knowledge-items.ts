@@ -53,6 +53,12 @@ export type ConversationKnowledgeIndexStatus = {
   failed: number
 }
 
+export function isConversationKnowledgeGenerationTitle(title: string): boolean {
+  return /^(?:you are an information curator for a developer workspace|summarize the conversation below as strict json)/i.test(
+    title.trim()
+  )
+}
+
 export function searchConversationKnowledgeItems(
   items: readonly ConversationKnowledgeItem[],
   query: string
@@ -61,7 +67,7 @@ export function searchConversationKnowledgeItems(
   if (!normalizedQuery) {
     return [...items]
   }
-  return items.filter((item) => knowledgeSearchText(item).includes(normalizedQuery))
+  return items.filter((item) => conversationKnowledgeSearchText(item).includes(normalizedQuery))
 }
 
 export function isConversationKnowledgeItemFresh(
@@ -79,7 +85,7 @@ export function isConversationKnowledgeItemFresh(
   )
 }
 
-function knowledgeSearchText(item: ConversationKnowledgeItem): string {
+export function conversationKnowledgeSearchText(item: ConversationKnowledgeItem): string {
   return [
     item.source.title,
     item.knowledge.summary,

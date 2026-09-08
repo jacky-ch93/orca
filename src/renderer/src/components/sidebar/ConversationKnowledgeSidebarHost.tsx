@@ -19,21 +19,21 @@ export default function ConversationKnowledgeSidebarHost({
   const setAgentDashboardDrawerOpen = useAppStore((s) => s.setAgentDashboardDrawerOpen)
   const sidebarWidth = useAppStore((s) => s.sidebarWidth)
   useEffect(() => {
-    if (!sidebarOpen && open) {
-      setOpen(false)
-    }
-  }, [open, setOpen, sidebarOpen])
-  useEffect(() => {
     if (open) {
       setAgentDashboardDrawerOpen(false)
     }
   }, [open, setAgentDashboardDrawerOpen])
-  if (!sidebarOpen) {
-    return null
-  }
-  const left = `var(--workspace-sidebar-live-width, ${sidebarWidth}px)`
+  const left = sidebarOpen ? `var(--workspace-sidebar-live-width, ${sidebarWidth}px)` : '0px'
   return (
-    <Sheet open={open} onOpenChange={setOpen} modal={false}>
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          setOpen(true)
+        }
+      }}
+      modal={false}
+    >
       <SheetContent
         side="left"
         showCloseButton={false}
@@ -60,7 +60,7 @@ export default function ConversationKnowledgeSidebarHost({
           {translate('conversationKnowledge.name', '会话知识')}
         </SheetTitle>
         <div className="flex min-h-0 flex-1 flex-col">
-          <ConversationKnowledgePanel />
+          <ConversationKnowledgePanel onClose={() => setOpen(false)} />
         </div>
       </SheetContent>
     </Sheet>

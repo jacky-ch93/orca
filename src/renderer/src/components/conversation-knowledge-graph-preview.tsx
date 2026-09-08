@@ -1,57 +1,49 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useAppStore } from '@/store'
-import { useAllWorktrees } from '@/store/selectors'
-import {
-  buildConversationKnowledgeGraph,
-  type ConversationKnowledgeGraph,
-  type ConversationKnowledgeGraphNode
+import { useMemo, useState } from 'react'
+import type {
+  ConversationKnowledgeGraph,
+  ConversationKnowledgeGraphNode
 } from '../../../shared/conversation-knowledge-graph'
 import type { ConversationKnowledgeItem } from '../../../shared/conversation-knowledge-items'
 
 type PositionedNode = ConversationKnowledgeGraphNode & { x: number; y: number }
+type FocusedNode = { id: string; viewMode: 'all' | 'project'; projectId: string | null }
 
 const NODE_WIDTH = 176
 const NODE_HEIGHT = 64
 const COLUMN_X = { project: 18, worktree: 210, topic: 18, entity: 210, knowledge: 430 } as const
 
 export function ConversationKnowledgeGraphPreview({
-  items,
+  graph,
   selectedItemId,
   onSelectItem,
   viewMode = 'all',
-  projectId = null
+  projectId = null,
+  emptyMessage = 'No generated knowledge yet.'
 }: {
-  items: readonly ConversationKnowledgeItem[]
+  graph: ConversationKnowledgeGraph
   selectedItemId?: string | null
   onSelectItem: (item: ConversationKnowledgeItem) => void
   viewMode?: 'all' | 'project'
   projectId?: string | null
+  emptyMessage?: string
 }): React.JSX.Element {
-  const repos = useAppStore((state) => state.repos)
-  const worktrees = useAllWorktrees()
-  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
-  const graph = useMemo(
-    () => buildConversationKnowledgeGraph({ repos, worktrees, items }),
-    [items, repos, worktrees]
-  )
+  const [focusedNode, setFocusedNode] = useState<FocusedNode | null>(null)
+  const focusedNodeId =
+    focusedNode?.viewMode === viewMode && focusedNode.projectId === projectId
+      ? focusedNode.id
+      : null
   const visibleGraph = useMemo(
-    () => (viewMode === 'project' ? projectGraph(graph, focusedNodeId, projectId) : graph),
-    [focusedNodeId, graph, projectId, viewMode]
+    () => focusConversationKnowledgeGraph(graph, focusedNodeId),
+    [graph, focusedNodeId]
   )
   const positions = useMemo(() => positionGraphNodes(visibleGraph), [visibleGraph])
   const positionById = useMemo(() => new Map(positions.map((node) => [node.id, node])), [positions])
   const height = Math.max(240, ...positions.map((node) => node.y + NODE_HEIGHT + 18))
 
-  useEffect(() => {
-    if (selectedItemId) {
-      setFocusedNodeId(`knowledge:${selectedItemId}`)
-    }
-  }, [selectedItemId])
-
   if (!positions.length) {
     return (
       <div className="flex min-h-52 items-center justify-center px-6 text-center text-sm text-muted-foreground">
-        No generated knowledge yet.
+        {emptyMessage}
       </div>
     )
   }
@@ -91,10 +83,14 @@ export function ConversationKnowledgeGraphPreview({
             data-current={node.item?.id === selectedItemId || undefined}
             onClick={() => {
               if (node.item) {
-                setFocusedNodeId(node.id)
+                setFocusedNode((current) =>
+                  toggleFocusedNode(current, node.id, viewMode, projectId)
+                )
                 onSelectItem(node.item)
               } else {
-                setFocusedNodeId((current) => (current === node.id ? null : node.id))
+                setFocusedNode((current) =>
+                  toggleFocusedNode(current, node.id, viewMode, projectId)
+                )
               }
             }}
             className="absolute rounded-xl border border-border/70 bg-background/95 px-3 py-2 text-left shadow-xs outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[current=true]:border-foreground/40 data-[current=true]:bg-accent"
@@ -116,38 +112,34 @@ export function ConversationKnowledgeGraphPreview({
   )
 }
 
-function projectGraph(
-  graph: ConversationKnowledgeGraph,
-  focusedNodeId: string | null,
+export function toggleFocusedNode(
+  current: FocusedNode | null,
+  id: string,
+  viewMode: FocusedNode['viewMode'],
   projectId: string | null
+): FocusedNode | null {
+  return current?.id === id && current.viewMode === viewMode && current.projectId === projectId
+    ? null
+    : { id, viewMode, projectId }
+}
+
+export function focusConversationKnowledgeGraph(
+  graph: ConversationKnowledgeGraph,
+  focusedNodeId: string | null
 ): ConversationKnowledgeGraph {
-  const projectIds = new Set(
-    graph.nodes.filter((node) => node.type === 'project').map((node) => node.id)
-  )
-  const requestedProject = projectId ? `project:${projectId}` : null
-  const selectedProject =
-    requestedProject && projectIds.has(requestedProject)
-      ? requestedProject
-      : focusedNodeId && projectIds.has(focusedNodeId)
-        ? focusedNodeId
-        : null
-  const projectKnowledgeIds = new Set(
+  if (!focusedNodeId || !graph.nodes.some((node) => node.id === focusedNodeId)) {
+    return graph
+  }
+  const relatedIds = new Set(
     graph.edges
-      .filter(
-        (edge) =>
-          projectIds.has(edge.source) && (!selectedProject || edge.source === selectedProject)
-      )
-      .map((edge) => edge.target)
+      .filter((edge) => edge.source === focusedNodeId || edge.target === focusedNodeId)
+      .flatMap((edge) => [edge.source, edge.target])
   )
-  const edges = graph.edges.filter(
-    (edge) =>
-      (!selectedProject && projectIds.has(edge.source)) ||
-      (selectedProject && projectIds.has(edge.source) && projectKnowledgeIds.has(edge.target)) ||
-      projectKnowledgeIds.has(edge.source) ||
-      projectKnowledgeIds.has(edge.target)
-  )
-  const ids = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
-  return { nodes: graph.nodes.filter((node) => ids.has(node.id)), edges }
+  relatedIds.add(focusedNodeId)
+  return {
+    nodes: graph.nodes.filter((node) => relatedIds.has(node.id)),
+    edges: graph.edges.filter((edge) => relatedIds.has(edge.source) && relatedIds.has(edge.target))
+  }
 }
 
 function positionGraphNodes(graph: ConversationKnowledgeGraph): PositionedNode[] {

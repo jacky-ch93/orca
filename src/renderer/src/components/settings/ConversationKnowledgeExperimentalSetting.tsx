@@ -142,7 +142,7 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
               <p className="text-xs text-muted-foreground">
                 {translate(
                   'conversationKnowledge.enrichmentCopy',
-                  'Automatically turns session history into summaries, topics, conclusions, and graph relationships.'
+                  'Checks for new or changed sessions once per day and turns them into summaries, topics, conclusions, and graph relationships.'
                 )}
               </p>
             </div>

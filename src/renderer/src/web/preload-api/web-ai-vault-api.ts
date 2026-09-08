@@ -45,6 +45,7 @@ export function createWebAiVaultApi(): NonNullable<Partial<PreloadApi>['aiVault'
       callRuntimeResult<ConversationKnowledgeIndexStatus>('aiVault.startKnowledgeIndex', args),
     getKnowledgeIndexStatus: () =>
       callRuntimeResult<ConversationKnowledgeIndexStatus>('aiVault.getKnowledgeIndexStatus', {}),
+    cancelKnowledgeIndex: () => callRuntimeResult<void>('aiVault.cancelKnowledgeIndex', {}),
     listSessions: (args?: AiVaultListArgs) => {
       const environment = requireActiveEnvironment()
       const executionHostId = toRuntimeExecutionHostId(environment.id)

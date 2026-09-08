@@ -6,38 +6,60 @@ import type {
 import type {
   AiVaultFirstUserPromptArgs,
   AiVaultListArgs,
+  AiVaultListResult,
   AiVaultSubagentListArgs
 } from '../../shared/ai-vault-types'
-import type { AiVaultSessionTitlesArgs } from '../../shared/ai-vault-session-title'
+import type {
+  AiVaultSessionTitlesArgs,
+  AiVaultSessionTitlesResult
+} from '../../shared/ai-vault-session-title'
 import type { AiVaultPrepareSessionResumeArgs } from '../../shared/ai-vault-resume-preparation'
 import type { AiVaultAgent } from '../../shared/ai-vault-types'
+import type {
+  AiVaultHistoryReadResult,
+  AiVaultHistorySearchResult
+} from '../../shared/ai-vault-history-types'
 import type { PreloadApi } from '../api-types'
 import type {
+  ConversationKnowledgeIndexStatus,
+  ConversationKnowledgeItem,
+  ConversationKnowledgeListResult,
   GenerateConversationKnowledgeRequest,
   StartConversationKnowledgeIndexRequest
 } from '../../shared/conversation-knowledge-items'
 
 export const aiVaultApi = {
-  listSessions: (args?: AiVaultListArgs): Promise<unknown> =>
-    ipcRenderer.invoke('aiVault:listSessions', args),
-  searchHistory: (args: { query: string; limit?: number }): Promise<unknown> =>
-    ipcRenderer.invoke('aiVault:searchHistory', args),
+  listSessions: (args?: AiVaultListArgs): Promise<AiVaultListResult> =>
+    ipcRenderer.invoke('aiVault:listSessions', args) as Promise<AiVaultListResult>,
+  searchHistory: (args: { query: string; limit?: number }): Promise<AiVaultHistorySearchResult> =>
+    ipcRenderer.invoke('aiVault:searchHistory', args) as Promise<AiVaultHistorySearchResult>,
   readHistory: (args: {
     agent: AiVaultAgent
     sessionId: string
     limit?: number
-  }): Promise<unknown> => ipcRenderer.invoke('aiVault:readHistory', args),
-  enrichHistory: (args: GenerateConversationKnowledgeRequest): Promise<unknown> =>
-    ipcRenderer.invoke('aiVault:enrichHistory', args),
-  listKnowledge: (args?: { query?: string; scopePaths?: string[] }): Promise<unknown> =>
-    ipcRenderer.invoke('aiVault:listKnowledge', args),
-  startKnowledgeIndex: (args: StartConversationKnowledgeIndexRequest): Promise<unknown> =>
-    ipcRenderer.invoke('aiVault:startKnowledgeIndex', args),
-  getKnowledgeIndexStatus: (): Promise<unknown> =>
-    ipcRenderer.invoke('aiVault:getKnowledgeIndexStatus'),
+  }): Promise<AiVaultHistoryReadResult> =>
+    ipcRenderer.invoke('aiVault:readHistory', args) as Promise<AiVaultHistoryReadResult>,
+  enrichHistory: (args: GenerateConversationKnowledgeRequest): Promise<ConversationKnowledgeItem> =>
+    ipcRenderer.invoke('aiVault:enrichHistory', args) as Promise<ConversationKnowledgeItem>,
+  listKnowledge: (args?: {
+    query?: string
+    scopePaths?: string[]
+  }): Promise<ConversationKnowledgeListResult> =>
+    ipcRenderer.invoke('aiVault:listKnowledge', args) as Promise<ConversationKnowledgeListResult>,
+  startKnowledgeIndex: (
+    args: StartConversationKnowledgeIndexRequest
+  ): Promise<ConversationKnowledgeIndexStatus> =>
+    ipcRenderer.invoke(
+      'aiVault:startKnowledgeIndex',
+      args
+    ) as Promise<ConversationKnowledgeIndexStatus>,
+  getKnowledgeIndexStatus: (): Promise<ConversationKnowledgeIndexStatus> =>
+    ipcRenderer.invoke(
+      'aiVault:getKnowledgeIndexStatus'
+    ) as Promise<ConversationKnowledgeIndexStatus>,
   cancelKnowledgeIndex: (): Promise<void> => ipcRenderer.invoke('aiVault:cancelKnowledgeIndex'),
-  resolveSessionTitles: (args: AiVaultSessionTitlesArgs): Promise<unknown> =>
-    ipcRenderer.invoke('aiVault:resolveSessionTitles', args),
+  resolveSessionTitles: (args: AiVaultSessionTitlesArgs): Promise<AiVaultSessionTitlesResult> =>
+    ipcRenderer.invoke('aiVault:resolveSessionTitles', args) as Promise<AiVaultSessionTitlesResult>,
   cancelListSessions: (args: { requestToken: string }): Promise<void> =>
     ipcRenderer.invoke('aiVault:cancelListSessions', args),
   prepareSessionResume: (args: AiVaultPrepareSessionResumeArgs) =>

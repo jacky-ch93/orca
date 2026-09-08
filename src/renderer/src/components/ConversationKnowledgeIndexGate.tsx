@@ -1,11 +1,19 @@
 import { useCallback, useEffect } from 'react'
 import { useAppStore } from '@/store'
-import { useActiveWorktree } from '@/store/selectors'
 import { getCommitMessageAgentSpec } from '../../../shared/commit-message-agent-spec'
+
+const AUTO_INDEX_INTERVAL_MS = 24 * 60 * 60 * 1_000
+const AUTO_INDEX_STORAGE_KEY = 'orca:conversation-knowledge:last-auto-index-at'
+
+export function shouldRunConversationKnowledgeAutoIndex(
+  lastRunAt: number | null,
+  now = Date.now()
+): boolean {
+  return lastRunAt === null || now - lastRunAt >= AUTO_INDEX_INTERVAL_MS
+}
 
 export function ConversationKnowledgeIndexGate(): null {
   const settings = useAppStore((state) => state.settings)
-  const activeWorktree = useActiveWorktree()
   const enabled =
     settings?.conversationKnowledgeEnabled === true &&
     settings.conversationKnowledgeEnrichmentEnabled === true
@@ -13,27 +21,30 @@ export function ConversationKnowledgeIndexGate(): null {
   const generatorModel =
     settings?.conversationKnowledgeEnrichmentModel ??
     (generatorAgent ? getCommitMessageAgentSpec(generatorAgent)?.defaultModelId : null)
-  const currentProjectOnly = settings?.conversationKnowledgeEnrichmentScope === 'current-project'
 
   const reconcile = useCallback(() => {
     if (!enabled || !generatorAgent || !generatorModel) {
       return
     }
-    const activePath = activeWorktree?.path
-    if (currentProjectOnly && !activePath) {
+    const lastRunAt = Number.parseInt(localStorage.getItem(AUTO_INDEX_STORAGE_KEY) ?? '', 10)
+    if (!shouldRunConversationKnowledgeAutoIndex(Number.isFinite(lastRunAt) ? lastRunAt : null)) {
       return
     }
+    const startedAt = Date.now()
+    localStorage.setItem(AUTO_INDEX_STORAGE_KEY, String(startedAt))
     void window.api.aiVault
       .startKnowledgeIndex({
         generatorAgent,
         generatorModel,
-        language: typeof navigator === 'undefined' ? 'en' : navigator.language,
-        scopePaths: currentProjectOnly
-          ? [activePath].filter((path): path is string => path !== undefined)
-          : undefined
+        language: typeof navigator === 'undefined' ? 'en' : navigator.language
       })
-      .catch((error) => console.error('[conversation-knowledge] Indexing failed:', error))
-  }, [activeWorktree, currentProjectOnly, enabled, generatorAgent, generatorModel])
+      .catch((error) => {
+        if (localStorage.getItem(AUTO_INDEX_STORAGE_KEY) === String(startedAt)) {
+          localStorage.removeItem(AUTO_INDEX_STORAGE_KEY)
+        }
+        console.error('[conversation-knowledge] Indexing failed:', error)
+      })
+  }, [enabled, generatorAgent, generatorModel])
 
   useEffect(() => {
     reconcile()
