@@ -13,6 +13,10 @@ import {
 import type { TuiAgent } from '../../shared/tui-agent'
 import { resolveConversationKnowledgeModel, type enrichAiVaultSession } from './session-enrichment'
 import {
+  findVerifiedLegacyEmptyIds,
+  readableConversationMessages
+} from './conversation-knowledge-empty-detection'
+import {
   conversationKnowledgeId,
   conversationPathIsWithin,
   isKnowledgeGenerationSession
@@ -217,9 +221,7 @@ export class ConversationKnowledgeService {
       agent: args.sourceAgent,
       sessionId: args.sessionId
     })
-    const readableMessages = history.messages.filter(
-      (message) => message.text.trim() && ['user', 'assistant'].includes(message.role)
-    )
+    const readableMessages = readableConversationMessages(history.messages)
     if (readableMessages.length === 0) {
       await this.dependencies.store.remove([conversationKnowledgeId(session)])
       return null
@@ -271,8 +273,18 @@ export class ConversationKnowledgeService {
     ])
     const sourceSessions = sessions.filter((session) => !isKnowledgeGenerationSession(session))
     const emptyIds = await this.removeKnownEmptyItems(sourceSessions, items)
+    const legacyEmptyIds = await findVerifiedLegacyEmptyIds({
+      sessions: sourceSessions,
+      items,
+      knownEmptyIds: emptyIds,
+      readSession: this.dependencies.readSession
+    })
+    await this.dependencies.store.remove([...legacyEmptyIds])
     const visibleItems = items.filter(
-      (item) => !emptyIds.has(item.id) && !isConversationKnowledgeGenerationTitle(item.source.title)
+      (item) =>
+        !emptyIds.has(item.id) &&
+        !legacyEmptyIds.has(item.id) &&
+        !isConversationKnowledgeGenerationTitle(item.source.title)
     )
     if (!scopePaths?.length) {
       return visibleItems
