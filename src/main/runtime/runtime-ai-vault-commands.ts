@@ -79,6 +79,10 @@ export class RuntimeAiVaultCommands {
     return this.knowledgeService().getIndexStatus()
   }
 
+  cancelKnowledgeIndex(): void {
+    this.knowledgeService().cancelIndex()
+  }
+
   resolveTitles(
     requests: AiVaultSessionTitleRequest[],
     signal?: AbortSignal

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { RefreshCw, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ConversationKnowledgeGraphPreview } from '@/components/conversation-knowledge-graph-preview'
@@ -46,6 +46,7 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
     [activeWorktree, settings?.conversationKnowledgeEnrichmentScope]
   )
   const summaryLanguage = typeof navigator === 'undefined' ? 'en' : navigator.language
+  const regenerateAll = status.state === 'idle' && status.total > 0 && status.failed === 0
 
   const refreshKnowledge = useCallback(async () => {
     try {
@@ -86,6 +87,15 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
     [generatorAgent, generatorModel, scopePaths, summaryLanguage]
   )
 
+  const stopIndex = useCallback(async () => {
+    try {
+      await window.api.aiVault.cancelKnowledgeIndex()
+      await refreshKnowledge()
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not stop knowledge indexing.')
+    }
+  }, [refreshKnowledge])
+
   useEffect(() => {
     void refreshKnowledge()
     const selectPending = (): void => {
@@ -108,6 +118,12 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
     }, 1_200)
     return () => window.clearInterval(timer)
   }, [refreshKnowledge, status.state])
+
+  useEffect(() => {
+    if (status.state === 'running' && generatorAgent && generatorModel) {
+      void startIndex(false)
+    }
+  }, [generatorAgent, generatorModel, startIndex, status.state])
 
   const chooseItem = (item: ConversationKnowledgeItem): void => {
     selectConversationKnowledgeItem(item)
@@ -136,13 +152,28 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
         </div>
         <div className="flex gap-1">
           <Button
-            size="icon-sm"
+            size="sm"
             variant="outline"
-            disabled={!generatorAgent || !generatorModel || status.state === 'running'}
-            onClick={() => void startIndex(true)}
+            disabled={!generatorAgent || !generatorModel}
+            onClick={() =>
+              void (status.state === 'running' ? stopIndex() : startIndex(regenerateAll))
+            }
+            title={translate(
+              regenerateAll
+                ? 'conversationKnowledge.regenerateAll'
+                : 'conversationKnowledge.generateAll',
+              regenerateAll ? '重新生成全部' : '生成全部'
+            )}
           >
-            {status.state === 'running' ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-            <span className="sr-only">Regenerate knowledge</span>
+            {status.state === 'running' ? <Square /> : <RefreshCw />}
+            {status.state === 'running'
+              ? translate('conversationKnowledge.stop', '停止生成')
+              : translate(
+                  regenerateAll
+                    ? 'conversationKnowledge.regenerateAll'
+                    : 'conversationKnowledge.generateAll',
+                  regenerateAll ? '重新生成全部' : '生成全部'
+                )}
           </Button>
         </div>
       </header>

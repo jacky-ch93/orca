@@ -48,6 +48,7 @@ export type AiVaultApi = {
     args: StartConversationKnowledgeIndexRequest
   ) => Promise<ConversationKnowledgeIndexStatus>
   getKnowledgeIndexStatus: () => Promise<ConversationKnowledgeIndexStatus>
+  cancelKnowledgeIndex: () => Promise<void>
   resolveSessionTitles: (args: AiVaultSessionTitlesArgs) => Promise<AiVaultSessionTitlesResult>
   cancelListSessions: (args: { requestToken: string }) => Promise<void>
   prepareSessionResume: (

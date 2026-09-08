@@ -78,6 +78,35 @@ describe('ConversationKnowledgeService', () => {
       failed: 1
     })
   })
+
+  it('does not index the internal sessions created by knowledge generation', async () => {
+    const enrich = vi.fn().mockResolvedValue({
+      summary: 'Summary',
+      topics: [],
+      conclusions: [],
+      entities: [],
+      agent: 'codex',
+      model: 'gpt-5'
+    })
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([
+        session('real'),
+        {
+          ...session('internal'),
+          title: 'You are an information curator for a developer workspace.'
+        }
+      ]),
+      readSession: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
+      enrich,
+      store: { list: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined) }
+    })
+
+    await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
+    await vi.waitFor(() => expect(service.getIndexStatus().state).toBe('idle'))
+
+    expect(enrich).toHaveBeenCalledTimes(1)
+    expect(enrich.mock.calls[0]?.[0]).toMatchObject({ session: { sessionId: 'real' } })
+  })
 })
 
 function session(sessionId: string): AiVaultSession {

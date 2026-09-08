@@ -17,6 +17,7 @@ export type RuntimeServiceCommandSurface = {
   enrichConversationKnowledge: RuntimeAiVaultCommands['enrichKnowledge']
   startConversationKnowledgeIndex: RuntimeAiVaultCommands['startKnowledgeIndex']
   getConversationKnowledgeIndexStatus: RuntimeAiVaultCommands['getKnowledgeIndexStatus']
+  cancelConversationKnowledgeIndex: RuntimeAiVaultCommands['cancelKnowledgeIndex']
   resolveAiVaultSessionTitles: RuntimeAiVaultCommands['resolveTitles']
   prepareAiVaultSessionResume: RuntimeAiVaultCommands['prepare']
   onClientEvent: RuntimeClientEventBus['on']
@@ -102,6 +103,7 @@ export function installRuntimeServiceCommandSurface(
     enrichConversationKnowledge: vault.enrichKnowledge.bind(vault),
     startConversationKnowledgeIndex: vault.startKnowledgeIndex.bind(vault),
     getConversationKnowledgeIndexStatus: vault.getKnowledgeIndexStatus.bind(vault),
+    cancelConversationKnowledgeIndex: vault.cancelKnowledgeIndex.bind(vault),
     resolveAiVaultSessionTitles: vault.resolveTitles.bind(vault),
     prepareAiVaultSessionResume: vault.prepare.bind(vault),
     onClientEvent: events.on.bind(events),

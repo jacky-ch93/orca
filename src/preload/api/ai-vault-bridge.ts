@@ -35,6 +35,7 @@ export const aiVaultApi = {
     ipcRenderer.invoke('aiVault:startKnowledgeIndex', args),
   getKnowledgeIndexStatus: (): Promise<unknown> =>
     ipcRenderer.invoke('aiVault:getKnowledgeIndexStatus'),
+  cancelKnowledgeIndex: (): Promise<void> => ipcRenderer.invoke('aiVault:cancelKnowledgeIndex'),
   resolveSessionTitles: (args: AiVaultSessionTitlesArgs): Promise<unknown> =>
     ipcRenderer.invoke('aiVault:resolveSessionTitles', args),
   cancelListSessions: (args: { requestToken: string }): Promise<void> =>

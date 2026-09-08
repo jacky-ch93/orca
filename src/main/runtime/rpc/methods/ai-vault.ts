@@ -163,6 +163,11 @@ export const AI_VAULT_METHODS: RpcMethod[] = [
     handler: (_params, { runtime }) => runtime.getConversationKnowledgeIndexStatus()
   }),
   defineMethod({
+    name: 'aiVault.cancelKnowledgeIndex',
+    params: z.object({}),
+    handler: (_params, { runtime }) => runtime.cancelConversationKnowledgeIndex()
+  }),
+  defineMethod({
     name: 'aiVault.resolveSessionTitles',
     params: AiVaultSessionTitlesParams,
     handler: (params, { runtime, signal }) =>

@@ -9,6 +9,7 @@ import {
   type CommitMessageAgentEnvironmentResolvers
 } from '../text-generation/commit-message-agent-environment'
 import { runLocalPlanForAgent } from '../text-generation/source-control-local-generation'
+import { discoverCommitMessageModelsLocal } from '../text-generation/commit-message-text-generation'
 
 const MAX_SUMMARY_MESSAGES = 12
 const MAX_SUMMARY_MESSAGE_CHARS = 1_200
@@ -71,7 +72,20 @@ export async function enrichAiVaultSession(input: {
   }
   let effectiveModel = model
   let result = await run(model)
-  const fallbackModel = codexBackgroundFallbackModel(input.agent, model)
+  let fallbackModel = codexBackgroundFallbackModel(input.agent, model)
+  if (!result.success && isUnsupportedModelFailure(result)) {
+    const discovered = await discoverCommitMessageModelsLocal(
+      input.agent,
+      environment.env,
+      undefined,
+      {
+        cwd: input.session.cwd ?? process.cwd()
+      }
+    )
+    if (discovered.success) {
+      fallbackModel = discovered.models.find((entry) => entry.id !== model)?.id ?? fallbackModel
+    }
+  }
   if (!result.success && fallbackModel && isUnsupportedModelFailure(result)) {
     effectiveModel = fallbackModel
     result = await run(fallbackModel)
@@ -147,11 +161,11 @@ export function resolveConversationKnowledgeModel(agent: TuiAgent, model: string
 }
 
 function codexBackgroundFallbackModel(agent: TuiAgent, model: string): string | null {
-  if (agent !== 'codex' || model !== 'gpt-5.4') {
+  if (agent !== 'codex' || !/^gpt-5\.(3|4)(?:-.*)?$/.test(model)) {
     return null
   }
-  return getCommitMessageAgentSpec(agent)?.models.some((entry) => entry.id === 'gpt-5.3-codex')
-    ? 'gpt-5.3-codex'
+  return getCommitMessageAgentSpec(agent)?.models.some((entry) => entry.id === 'gpt-5.6-sol')
+    ? 'gpt-5.6-sol'
     : null
 }
 

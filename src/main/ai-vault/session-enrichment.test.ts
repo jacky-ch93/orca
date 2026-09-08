@@ -14,7 +14,8 @@ describe('parseConversationKnowledgeOutput', () => {
   })
 
   it('uses a ChatGPT-compatible Codex model when the CLI rejects gpt-5.4', () => {
-    expect(resolveConversationKnowledgeModel('codex', 'gpt-5.4')).toBe('gpt-5.3-codex')
+    expect(resolveConversationKnowledgeModel('codex', 'gpt-5.4')).toBe('gpt-5.6-sol')
+    expect(resolveConversationKnowledgeModel('codex', 'gpt-5.3-codex')).toBe('gpt-5.6-sol')
     expect(resolveConversationKnowledgeModel('codex', 'gpt-5.5')).toBe('gpt-5.5')
   })
 

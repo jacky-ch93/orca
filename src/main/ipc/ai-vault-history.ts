@@ -92,6 +92,7 @@ export function registerAiVaultHistoryHandlers(
     }
   )
   ipcMain.handle('aiVault:getKnowledgeIndexStatus', () => knowledgeService().getIndexStatus())
+  ipcMain.handle('aiVault:cancelKnowledgeIndex', () => knowledgeService().cancelIndex())
 }
 
 function isAiVaultAgent(value: unknown): value is AiVaultAgent {

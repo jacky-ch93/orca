@@ -7,8 +7,10 @@ import {
 } from '../../shared/conversation-knowledge-items'
 import type { TuiAgent } from '../../shared/tui-agent'
 import { resolveConversationKnowledgeModel, type enrichAiVaultSession } from './session-enrichment'
+import { cancelLocalGeneration } from '../text-generation/source-control-generation-lanes'
 
-const MAX_CONCURRENT_SUMMARIES = 2
+// Keep one active process so a model switch can cancel the exact in-flight call.
+const MAX_CONCURRENT_SUMMARIES = 1
 
 type KnowledgeStore = {
   list(): Promise<ConversationKnowledgeItem[]>
@@ -39,6 +41,8 @@ export class ConversationKnowledgeService {
   }
   private indexPromise: Promise<void> | null = null
   private indexConfig: string | null = null
+  private cancelRequested = false
+  private activeCwd: string | null = null
 
   constructor(private readonly dependencies: ConversationKnowledgeServiceDependencies) {}
 
@@ -59,6 +63,7 @@ export class ConversationKnowledgeService {
     scopePaths?: string[]
     force?: boolean
     language?: string
+    preserveExisting?: boolean
   }): Promise<ConversationKnowledgeIndexStatus> {
     const configKey = JSON.stringify({
       generatorAgent: args.generatorAgent,
@@ -70,14 +75,20 @@ export class ConversationKnowledgeService {
       if (this.indexConfig === configKey) {
         return this.indexStatus
       }
+      this.cancelIndex()
       await this.indexPromise
-      return this.startIndex(args)
+      // A model/agent switch resumes only sessions without a saved result;
+      // completed summaries remain valid until explicitly regenerated.
+      return this.startIndex({ ...args, preserveExisting: true })
     }
     const [sessions, existingItems] = await Promise.all([
       this.dependencies.listSessions(),
       this.dependencies.store.list()
     ])
     const scopedSessions = sessions.filter((session) => {
+      if (isKnowledgeGenerationSession(session)) {
+        return false
+      }
       const cwd = session.cwd
       return (
         !args.scopePaths?.length ||
@@ -96,14 +107,15 @@ export class ConversationKnowledgeService {
       )
       return (
         !existing ||
-        !isConversationKnowledgeItemFresh(existing, {
-          sourceUpdatedAt: session.updatedAt,
-          generatorAgent: args.generatorAgent,
-          generatorModel: resolveConversationKnowledgeModel(
-            args.generatorAgent,
-            args.generatorModel
-          )
-        })
+        (!args.preserveExisting &&
+          !isConversationKnowledgeItemFresh(existing, {
+            sourceUpdatedAt: session.updatedAt,
+            generatorAgent: args.generatorAgent,
+            generatorModel: resolveConversationKnowledgeModel(
+              args.generatorAgent,
+              args.generatorModel
+            )
+          }))
       )
     })
     this.indexStatus = {
@@ -113,6 +125,7 @@ export class ConversationKnowledgeService {
       failed: 0
     }
     if (pendingSessions.length) {
+      this.cancelRequested = false
       this.indexConfig = configKey
       this.indexPromise = this.runIndex(pendingSessions, args).finally(() => {
         this.indexStatus = { ...this.indexStatus, state: 'idle' }
@@ -127,6 +140,18 @@ export class ConversationKnowledgeService {
     return this.indexStatus
   }
 
+  cancelIndex(): void {
+    this.cancelRequested = true
+    this.indexStatus = {
+      ...this.indexStatus,
+      state: 'idle',
+      failed: Math.max(this.indexStatus.failed, this.indexStatus.total - this.indexStatus.completed)
+    }
+    if (this.activeCwd) {
+      cancelLocalGeneration('knowledge-enrichment', this.activeCwd)
+    }
+  }
+
   private async runIndex(
     sessions: readonly AiVaultSession[],
     args: { generatorAgent: TuiAgent; generatorModel: string; language?: string }
@@ -134,7 +159,11 @@ export class ConversationKnowledgeService {
     let nextIndex = 0
     const worker = async (): Promise<void> => {
       while (nextIndex < sessions.length) {
+        if (this.cancelRequested) {
+          return
+        }
         const session = sessions[nextIndex++]
+        this.activeCwd = session.cwd ?? process.cwd()
         try {
           await this.generateFromSession(session, {
             sourceAgent: session.agent,
@@ -144,8 +173,12 @@ export class ConversationKnowledgeService {
             language: args.language
           })
           this.indexStatus = { ...this.indexStatus, completed: this.indexStatus.completed + 1 }
-        } catch {
-          this.indexStatus = { ...this.indexStatus, failed: this.indexStatus.failed + 1 }
+        } catch (error) {
+          if (!isCanceledGeneration(error)) {
+            this.indexStatus = { ...this.indexStatus, failed: this.indexStatus.failed + 1 }
+          }
+        } finally {
+          this.activeCwd = null
         }
       }
     }
@@ -204,14 +237,31 @@ export class ConversationKnowledgeService {
 
   async list(scopePaths?: readonly string[]): Promise<ConversationKnowledgeItem[]> {
     const items = await this.dependencies.store.list()
+    const visibleItems = items.filter(
+      (item) => !isKnowledgeGenerationSessionTitle(item.source.title)
+    )
     if (!scopePaths?.length) {
-      return items
+      return visibleItems
     }
-    return items.filter(
+    return visibleItems.filter(
       (item) =>
         item.source.cwd !== null && scopePaths.some((path) => pathContains(path, item.source.cwd!))
     )
   }
+}
+
+function isKnowledgeGenerationSession(session: AiVaultSession): boolean {
+  return isKnowledgeGenerationSessionTitle(session.title)
+}
+
+function isKnowledgeGenerationSessionTitle(title: string): boolean {
+  return /^(?:you are an information curator for a developer workspace|summarize the conversation below as strict json)/i.test(
+    title.trim()
+  )
+}
+
+function isCanceledGeneration(error: unknown): boolean {
+  return error instanceof Error && /generation canceled/i.test(error.message)
 }
 
 function pathContains(scopePath: string, candidatePath: string): boolean {
