@@ -166,6 +166,32 @@ describe('ConversationKnowledgeService', () => {
       failed: 0
     })
   })
+
+  it('verifies and removes legacy summaries that describe an empty transcript', async () => {
+    const remove = vi.fn().mockResolvedValue(undefined)
+    const emptyItem = {
+      ...knowledgeItem('legacy-empty'),
+      knowledge: {
+        summary: '对话中未包含任何可读取的用户或助手消息内容。',
+        topics: ['空对话'],
+        conclusions: [],
+        entities: []
+      }
+    }
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([session('legacy-empty')]),
+      readSession: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
+      enrich: vi.fn(),
+      store: {
+        list: vi.fn().mockResolvedValue([emptyItem]),
+        upsert: vi.fn(),
+        remove
+      }
+    })
+
+    expect(await service.list()).toEqual([])
+    expect(remove).toHaveBeenCalledWith(['local:claude:legacy-empty'])
+  })
 })
 
 function session(sessionId: string, overrides: Partial<AiVaultSession> = {}): AiVaultSession {
