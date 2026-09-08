@@ -23,7 +23,7 @@ describe('ConversationKnowledgeService', () => {
     const upsert = vi.fn().mockResolvedValue(undefined)
     const service = new ConversationKnowledgeService({
       listSessions: vi.fn().mockResolvedValue([session]),
-      readSession: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
       enrich,
       store: { list: vi.fn().mockResolvedValue([]), upsert }
     })
@@ -59,7 +59,7 @@ describe('ConversationKnowledgeService', () => {
       })
     const service = new ConversationKnowledgeService({
       listSessions: vi.fn().mockResolvedValue(sessions),
-      readSession: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
       enrich,
       store: {
         list: vi.fn().mockResolvedValue([existing]),
@@ -96,7 +96,7 @@ describe('ConversationKnowledgeService', () => {
           title: 'You are an information curator for a developer workspace.'
         }
       ]),
-      readSession: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
       enrich,
       store: { list: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined) }
     })
@@ -107,17 +107,91 @@ describe('ConversationKnowledgeService', () => {
     expect(enrich).toHaveBeenCalledTimes(1)
     expect(enrich.mock.calls[0]?.[0]).toMatchObject({ session: { sessionId: 'real' } })
   })
+
+  it('skips zero-turn sessions and removes their cached summaries', async () => {
+    const emptySession = session('empty', { messageCount: 0, previewMessages: [] })
+    const remove = vi.fn().mockResolvedValue(undefined)
+    const enrich = vi.fn()
+    const store = {
+      list: vi.fn().mockResolvedValue([knowledgeItem('empty')]),
+      upsert: vi.fn().mockResolvedValue(undefined),
+      remove
+    }
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([emptySession]),
+      readSession: vi.fn(),
+      enrich,
+      store
+    })
+
+    expect(await service.list()).toEqual([])
+    await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
+
+    expect(remove).toHaveBeenCalledWith(['local:claude:empty'])
+    expect(enrich).not.toHaveBeenCalled()
+    expect(service.getIndexStatus()).toEqual({
+      state: 'idle',
+      total: 0,
+      completed: 0,
+      failed: 0
+    })
+  })
+
+  it('does not invoke an agent when the transcript has no readable messages', async () => {
+    const enrich = vi.fn()
+    const upsert = vi.fn().mockResolvedValue(undefined)
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([session('unreadable')]),
+      readSession: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
+      enrich,
+      store: { list: vi.fn().mockResolvedValue([]), upsert }
+    })
+
+    await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
+    await vi.waitFor(() => expect(service.getIndexStatus().state).toBe('idle'))
+
+    expect(enrich).not.toHaveBeenCalled()
+    expect(upsert).not.toHaveBeenCalled()
+    expect(service.getIndexStatus()).toEqual({
+      state: 'idle',
+      total: 1,
+      completed: 1,
+      failed: 0
+    })
+  })
 })
 
-function session(sessionId: string): AiVaultSession {
+function session(sessionId: string, overrides: Partial<AiVaultSession> = {}): AiVaultSession {
   return {
+    id: `claude:${sessionId}`,
     executionHostId: 'local',
     agent: 'claude',
     sessionId,
     title: sessionId,
     cwd: '/code/orca',
-    updatedAt: '2026-09-01T10:00:00.000Z'
-  } as AiVaultSession
+    branch: 'main',
+    model: 'claude-sonnet-4-5',
+    filePath: `/sessions/${sessionId}.jsonl`,
+    codexHome: null,
+    createdAt: '2026-09-01T09:00:00.000Z',
+    updatedAt: '2026-09-01T10:00:00.000Z',
+    modifiedAt: '2026-09-01T10:00:00.000Z',
+    messageCount: 2,
+    totalTokens: 100,
+    previewMessages: [{ role: 'user', text: 'Question', timestamp: null }],
+    queuedMessageCount: 0,
+    subagentTranscriptCount: 0,
+    resumeCommand: '',
+    subagent: null,
+    ...overrides
+  }
+}
+
+function readableHistory() {
+  return {
+    messages: [{ id: 'one', role: 'user' as const, text: 'Question', timestamp: null }],
+    truncated: false
+  }
 }
 
 function knowledgeItem(sessionId: string) {
