@@ -92,6 +92,28 @@ export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
       ]
     },
     {
+      title: translate('conversationKnowledge.name', '会话知识'),
+      description: translate(
+        'auto.components.settings.ExperimentalPane.conversationKnowledgeDescription',
+        'Build a searchable knowledge layer from agent session history.'
+      ),
+      keywords: [
+        ...translateSearchKeyword(
+          'auto.components.settings.experimental.search.0d24759f14',
+          'experimental'
+        ),
+        'conversation',
+        'history',
+        'knowledge',
+        'summary',
+        'graph',
+        '会话',
+        '知识',
+        '总结',
+        '图谱'
+      ]
+    },
+    {
       title: translate(
         'auto.components.settings.experimental.search.9e4ddf776d',
         'Terminal attention'
@@ -207,6 +229,7 @@ export function getExperimentalSearchEntry() {
         'Agent Dashboard'
       )
     ),
+    conversationKnowledge: findEntry(translate('conversationKnowledge.name', '会话知识')),
     terminalAttention: findEntry(
       translate('auto.components.settings.experimental.search.9e4ddf776d', 'Terminal attention')
     ),

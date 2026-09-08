@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { SettingsSwitch } from './SettingsFormControls'
 import { SearchableSetting } from './SearchableSetting'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
+import { getExperimentalSearchEntry } from './experimental-search'
 
 type Props = {
   settings: GlobalSettings
@@ -20,6 +21,7 @@ type Props = {
 }
 
 export function ConversationKnowledgeExperimentalSetting({ settings, updateSettings }: Props) {
+  const searchEntry = getExperimentalSearchEntry().conversationKnowledge
   const detectedAgentIds = useAppStore((s) => s.detectedAgentIds)
   const knowledgeAgents = ALL_TUI_AGENTS.filter(
     (agent) =>
@@ -101,12 +103,8 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
 
   return (
     <SearchableSetting
-      title={translate('conversationKnowledge.name', '会话知识')}
-      description={translate(
-        'auto.components.settings.ExperimentalPane.conversationKnowledgeDescription',
-        'Build a searchable knowledge layer from agent session history.'
-      )}
-      keywords={['conversation', 'history', 'knowledge', 'search']}
+      {...searchEntry}
+      id="experimental-conversation-knowledge"
       className="space-y-3 py-2"
     >
       <div className="flex items-start justify-between gap-4">

@@ -62,6 +62,11 @@ export function ExperimentalPane({
 
   return (
     <div className="space-y-4">
+      <ConversationKnowledgeExperimentalSetting
+        settings={settings}
+        updateSettings={updateSettings}
+      />
+
       {showAgentDashboard ? (
         <AgentDashboardExperimentalSetting settings={settings} updateSettings={updateSettings} />
       ) : null}
@@ -103,11 +108,6 @@ export function ExperimentalPane({
       {showNativeChat ? (
         <NativeChatExperimentalSetting settings={settings} updateSettings={updateSettings} />
       ) : null}
-
-      <ConversationKnowledgeExperimentalSetting
-        settings={settings}
-        updateSettings={updateSettings}
-      />
 
       {showTerminalAttention ? (
         <SearchableSetting
