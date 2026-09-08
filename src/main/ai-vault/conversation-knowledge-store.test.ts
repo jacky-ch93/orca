@@ -39,6 +39,19 @@ describe('ConversationKnowledgeStore', () => {
     expect(items).toHaveLength(1)
     expect(items[0]?.knowledge.summary).toBe('Updated summary')
   })
+
+  it('removes cached knowledge for specified source sessions', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'orca-knowledge-'))
+    temporaryDirectories.push(directory)
+    const store = new ConversationKnowledgeStore(directory)
+    const retained = { ...knowledgeItem(), id: 'local:codex:session-2' }
+    await store.upsert(knowledgeItem())
+    await store.upsert(retained)
+
+    await store.remove(['local:codex:session-1'])
+
+    await expect(store.list()).resolves.toEqual([retained])
+  })
 })
 
 function knowledgeItem(): ConversationKnowledgeItem {

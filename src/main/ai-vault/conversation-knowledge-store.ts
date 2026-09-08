@@ -36,6 +36,22 @@ export class ConversationKnowledgeStore {
     return next
   }
 
+  remove(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) {
+      return this.mutation
+    }
+    const removedIds = new Set(ids)
+    const next = this.mutation.then(async () => {
+      const snapshot = await this.readSnapshot()
+      const items = snapshot.items.filter((item) => !removedIds.has(item.id))
+      if (items.length !== snapshot.items.length) {
+        await this.writeSnapshot({ ...snapshot, items })
+      }
+    })
+    this.mutation = next.catch(() => {})
+    return next
+  }
+
   private async readSnapshot(): Promise<StoredConversationKnowledge> {
     try {
       const value: unknown = JSON.parse(await readFile(this.filePath(), 'utf8'))

@@ -25,7 +25,7 @@ describe('ConversationKnowledgeService', () => {
       listSessions: vi.fn().mockResolvedValue([session]),
       readSession: vi.fn().mockResolvedValue(readableHistory()),
       enrich,
-      store: { list: vi.fn().mockResolvedValue([]), upsert }
+      store: { list: vi.fn().mockResolvedValue([]), upsert, remove: vi.fn() }
     })
 
     const item = await service.generate({
@@ -63,7 +63,8 @@ describe('ConversationKnowledgeService', () => {
       enrich,
       store: {
         list: vi.fn().mockResolvedValue([existing]),
-        upsert: vi.fn().mockResolvedValue(undefined)
+        upsert: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined)
       }
     })
 
@@ -98,7 +99,11 @@ describe('ConversationKnowledgeService', () => {
       ]),
       readSession: vi.fn().mockResolvedValue(readableHistory()),
       enrich,
-      store: { list: vi.fn().mockResolvedValue([]), upsert: vi.fn().mockResolvedValue(undefined) }
+      store: {
+        list: vi.fn().mockResolvedValue([]),
+        upsert: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined)
+      }
     })
 
     await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
@@ -140,11 +145,12 @@ describe('ConversationKnowledgeService', () => {
   it('does not invoke an agent when the transcript has no readable messages', async () => {
     const enrich = vi.fn()
     const upsert = vi.fn().mockResolvedValue(undefined)
+    const remove = vi.fn().mockResolvedValue(undefined)
     const service = new ConversationKnowledgeService({
       listSessions: vi.fn().mockResolvedValue([session('unreadable')]),
       readSession: vi.fn().mockResolvedValue({ messages: [], truncated: false }),
       enrich,
-      store: { list: vi.fn().mockResolvedValue([]), upsert }
+      store: { list: vi.fn().mockResolvedValue([]), upsert, remove }
     })
 
     await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
@@ -152,6 +158,7 @@ describe('ConversationKnowledgeService', () => {
 
     expect(enrich).not.toHaveBeenCalled()
     expect(upsert).not.toHaveBeenCalled()
+    expect(remove).toHaveBeenCalledWith(['local:claude:unreadable'])
     expect(service.getIndexStatus()).toEqual({
       state: 'idle',
       total: 1,

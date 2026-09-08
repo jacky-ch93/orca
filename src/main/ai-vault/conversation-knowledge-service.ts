@@ -1,5 +1,9 @@
 import type { AiVaultHistoryReadResult } from '../../shared/ai-vault-history-types'
-import type { AiVaultAgent, AiVaultSession } from '../../shared/ai-vault-types'
+import {
+  isAiVaultSessionResumableContent,
+  type AiVaultAgent,
+  type AiVaultSession
+} from '../../shared/ai-vault-types'
 import {
   isConversationKnowledgeGenerationTitle,
   isConversationKnowledgeItemFresh,
@@ -8,6 +12,12 @@ import {
 } from '../../shared/conversation-knowledge-items'
 import type { TuiAgent } from '../../shared/tui-agent'
 import { resolveConversationKnowledgeModel, type enrichAiVaultSession } from './session-enrichment'
+import {
+  conversationKnowledgeId,
+  conversationPathIsWithin,
+  isKnowledgeGenerationSession
+} from './conversation-knowledge-source-session'
+import { resolveKnowledgeTitle } from './conversation-knowledge-title'
 import { cancelLocalGeneration } from '../text-generation/source-control-generation-lanes'
 
 // Keep one active process so a model switch can cancel the exact in-flight call.
@@ -16,6 +26,7 @@ const MAX_CONCURRENT_SUMMARIES = 1
 type KnowledgeStore = {
   list(): Promise<ConversationKnowledgeItem[]>
   upsert(item: ConversationKnowledgeItem): Promise<void>
+  remove(ids: readonly string[]): Promise<void>
 }
 
 type ConversationKnowledgeServiceDependencies = {
@@ -55,7 +66,11 @@ export class ConversationKnowledgeService {
     if (!session) {
       throw new Error('Source conversation was not found on this execution host.')
     }
-    return this.generateFromSession(session, args)
+    const item = await this.generateFromSession(session, args)
+    if (!item) {
+      throw new Error('Source conversation has no readable user or assistant messages.')
+    }
+    return item
   }
 
   async startIndex(args: {
@@ -86,14 +101,17 @@ export class ConversationKnowledgeService {
       this.dependencies.listSessions(),
       this.dependencies.store.list()
     ])
-    const scopedSessions = sessions.filter((session) => {
-      if (isKnowledgeGenerationSession(session)) {
+    const sourceSessions = sessions.filter((session) => !isKnowledgeGenerationSession(session))
+    await this.removeKnownEmptyItems(sourceSessions, existingItems)
+    const scopedSessions = sourceSessions.filter((session) => {
+      if (!isAiVaultSessionResumableContent(session)) {
         return false
       }
       const cwd = session.cwd
       return (
         !args.scopePaths?.length ||
-        (cwd !== null && args.scopePaths.some((scopePath) => pathContains(scopePath, cwd)))
+        (cwd !== null &&
+          args.scopePaths.some((scopePath) => conversationPathIsWithin(scopePath, cwd)))
       )
     })
     const pendingSessions = scopedSessions.filter((session) => {
@@ -173,7 +191,10 @@ export class ConversationKnowledgeService {
             generatorModel: args.generatorModel,
             language: args.language
           })
-          this.indexStatus = { ...this.indexStatus, completed: this.indexStatus.completed + 1 }
+          this.indexStatus = {
+            ...this.indexStatus,
+            completed: this.indexStatus.completed + 1
+          }
         } catch (error) {
           if (!isCanceledGeneration(error)) {
             this.indexStatus = { ...this.indexStatus, failed: this.indexStatus.failed + 1 }
@@ -191,14 +212,21 @@ export class ConversationKnowledgeService {
   private async generateFromSession(
     session: AiVaultSession,
     args: GenerateConversationKnowledgeArgs
-  ): Promise<ConversationKnowledgeItem> {
+  ): Promise<ConversationKnowledgeItem | null> {
     const history = await this.dependencies.readSession({
       agent: args.sourceAgent,
       sessionId: args.sessionId
     })
+    const readableMessages = history.messages.filter(
+      (message) => message.text.trim() && ['user', 'assistant'].includes(message.role)
+    )
+    if (readableMessages.length === 0) {
+      await this.dependencies.store.remove([conversationKnowledgeId(session)])
+      return null
+    }
     const enrichment = await this.dependencies.enrich({
       session,
-      messages: history.messages,
+      messages: readableMessages,
       agent: args.generatorAgent,
       model: args.generatorModel,
       language: args.language
@@ -207,7 +235,7 @@ export class ConversationKnowledgeService {
       enrichment.title,
       session.title,
       enrichment.summary,
-      history.messages
+      readableMessages
     )
     const item: ConversationKnowledgeItem = {
       id: `${session.executionHostId}:${session.agent}:${session.sessionId}`,
@@ -237,69 +265,40 @@ export class ConversationKnowledgeService {
   }
 
   async list(scopePaths?: readonly string[]): Promise<ConversationKnowledgeItem[]> {
-    const items = await this.dependencies.store.list()
+    const [items, sessions] = await Promise.all([
+      this.dependencies.store.list(),
+      this.dependencies.listSessions()
+    ])
+    const sourceSessions = sessions.filter((session) => !isKnowledgeGenerationSession(session))
+    const emptyIds = await this.removeKnownEmptyItems(sourceSessions, items)
     const visibleItems = items.filter(
-      (item) => !isConversationKnowledgeGenerationTitle(item.source.title)
+      (item) => !emptyIds.has(item.id) && !isConversationKnowledgeGenerationTitle(item.source.title)
     )
     if (!scopePaths?.length) {
       return visibleItems
     }
     return visibleItems.filter(
       (item) =>
-        item.source.cwd !== null && scopePaths.some((path) => pathContains(path, item.source.cwd!))
+        item.source.cwd !== null &&
+        scopePaths.some((path) => conversationPathIsWithin(path, item.source.cwd!))
     )
   }
-}
 
-function isKnowledgeGenerationSession(session: AiVaultSession): boolean {
-  return isConversationKnowledgeGenerationTitle(session.title)
+  private async removeKnownEmptyItems(
+    sessions: readonly AiVaultSession[],
+    items: readonly ConversationKnowledgeItem[]
+  ): Promise<Set<string>> {
+    const emptyIds = new Set(
+      sessions
+        .filter((session) => !isAiVaultSessionResumableContent(session))
+        .map(conversationKnowledgeId)
+    )
+    const cachedEmptyIds = items.filter((item) => emptyIds.has(item.id)).map((item) => item.id)
+    await this.dependencies.store.remove(cachedEmptyIds)
+    return emptyIds
+  }
 }
 
 function isCanceledGeneration(error: unknown): boolean {
   return error instanceof Error && /generation canceled/i.test(error.message)
-}
-
-function pathContains(scopePath: string, candidatePath: string): boolean {
-  const scope = scopePath.replaceAll('\\', '/').replace(/\/+$/, '').toLocaleLowerCase()
-  const candidate = candidatePath.replaceAll('\\', '/').replace(/\/+$/, '').toLocaleLowerCase()
-  return candidate === scope || candidate.startsWith(`${scope}/`)
-}
-
-function deriveKnowledgeTitle(sourceTitle: string, summary: string): string {
-  const normalized = sourceTitle.trim()
-  if (isSpecificKnowledgeTitle(normalized)) {
-    return normalized
-  }
-  const sentence = summary
-    .trim()
-    .split(/(?<=[.!?。！？])\s+/u)[0]
-    ?.trim()
-  return (sentence || 'Conversation knowledge').slice(0, 120)
-}
-
-function resolveKnowledgeTitle(
-  generatedTitle: string | undefined,
-  sourceTitle: string,
-  summary: string,
-  messages: readonly { role: string; text: string }[]
-): string {
-  if (generatedTitle && isSpecificKnowledgeTitle(generatedTitle)) {
-    return generatedTitle.slice(0, 120)
-  }
-  const userMessage = messages.find((message) => message.role === 'user')?.text.trim()
-  const firstLine = userMessage?.split(/\r?\n/u)[0]?.trim()
-  if (firstLine && isSpecificKnowledgeTitle(firstLine)) {
-    return firstLine.slice(0, 120)
-  }
-  return deriveKnowledgeTitle(sourceTitle, summary)
-}
-
-function isSpecificKnowledgeTitle(value: string): boolean {
-  return value.length > 0 && value.length <= 120 && !isGenericKnowledgeTitle(value)
-}
-
-function isGenericKnowledgeTitle(value: string): boolean {
-  return /^(?:you are an information curator|summarize the conversation|short descriptive title|conversation knowledge)/i.test(
-    value.trim()
-  )
 }
