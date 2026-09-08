@@ -215,31 +215,6 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
                   </Select>
                 </div>
               ) : null}
-              <div>
-                <p className="mb-1.5 text-xs font-medium">Index scope</p>
-                <Select
-                  value={
-                    settings.conversationKnowledgeEnrichmentScope === 'current-project'
-                      ? 'current-project'
-                      : 'all-history'
-                  }
-                  onValueChange={(scope) =>
-                    updateSettings({
-                      conversationKnowledgeEnrichmentScope: scope as
-                        | 'current-project'
-                        | 'all-history'
-                    })
-                  }
-                >
-                  <SelectTrigger size="sm" className="w-full max-w-72">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="current-project">Current project</SelectItem>
-                    <SelectItem value="all-history">All history</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           ) : null}
         </div>

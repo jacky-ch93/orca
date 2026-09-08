@@ -31,6 +31,8 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
   const [selected, setSelected] = useState<ConversationKnowledgeItem | null>(null)
   const [status, setStatus] = useState<ConversationKnowledgeIndexStatus>(IDLE_STATUS)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'all' | 'project'>('all')
+  const activeProjectId = activeWorktree?.repoId ?? null
   const generatorAgent = settings?.conversationKnowledgeEnrichmentAgent ?? null
   const generatorModel = useMemo(
     () =>
@@ -38,13 +40,7 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
       (generatorAgent ? getCommitMessageAgentSpec(generatorAgent)?.defaultModelId : null),
     [generatorAgent, settings?.conversationKnowledgeEnrichmentModel]
   )
-  const scopePaths = useMemo(
-    () =>
-      settings?.conversationKnowledgeEnrichmentScope === 'current-project' && activeWorktree
-        ? [activeWorktree.path]
-        : undefined,
-    [activeWorktree, settings?.conversationKnowledgeEnrichmentScope]
-  )
+  const scopePaths = undefined
   const summaryLanguage = typeof navigator === 'undefined' ? 'en' : navigator.language
   const regenerateAll = status.state === 'idle' && status.total > 0 && status.failed === 0
 
@@ -147,8 +143,20 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
             </p>
           ) : null}
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Scope: {scopePaths ? 'Current project' : 'All history'}
+            {items.length ? `显示 ${items.length} 项，共 ${items.length} 项` : '暂无知识项'}
           </p>
+          <div className="mt-2 flex gap-1">
+            {(['all', 'project'] as const).map((mode) => (
+              <Button
+                key={mode}
+                size="xs"
+                variant={viewMode === mode ? 'secondary' : 'ghost'}
+                onClick={() => setViewMode(mode)}
+              >
+                {mode === 'all' ? '全部' : '按项目'}
+              </Button>
+            ))}
+          </div>
         </div>
         <div className="flex gap-1">
           <Button
@@ -193,6 +201,8 @@ export default function ConversationKnowledgePanel(): React.JSX.Element {
               items={items}
               selectedItemId={selected?.id}
               onSelectItem={chooseItem}
+              viewMode={viewMode}
+              projectId={activeProjectId}
             />
           </ScrollArea>
           <ScrollArea className="min-h-0">

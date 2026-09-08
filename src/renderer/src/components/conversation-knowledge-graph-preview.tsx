@@ -17,11 +17,15 @@ const COLUMN_X = { project: 18, worktree: 210, topic: 18, entity: 210, knowledge
 export function ConversationKnowledgeGraphPreview({
   items,
   selectedItemId,
-  onSelectItem
+  onSelectItem,
+  viewMode = 'all',
+  projectId = null
 }: {
   items: readonly ConversationKnowledgeItem[]
   selectedItemId?: string | null
   onSelectItem: (item: ConversationKnowledgeItem) => void
+  viewMode?: 'all' | 'project'
+  projectId?: string | null
 }): React.JSX.Element {
   const repos = useAppStore((state) => state.repos)
   const worktrees = useAllWorktrees()
@@ -30,7 +34,10 @@ export function ConversationKnowledgeGraphPreview({
     () => buildConversationKnowledgeGraph({ repos, worktrees, items }),
     [items, repos, worktrees]
   )
-  const visibleGraph = useMemo(() => focusGraph(graph, focusedNodeId), [focusedNodeId, graph])
+  const visibleGraph = useMemo(
+    () => (viewMode === 'project' ? projectGraph(graph, focusedNodeId, projectId) : graph),
+    [focusedNodeId, graph, projectId, viewMode]
+  )
   const positions = useMemo(() => positionGraphNodes(visibleGraph), [visibleGraph])
   const positionById = useMemo(() => new Map(positions.map((node) => [node.id, node])), [positions])
   const height = Math.max(240, ...positions.map((node) => node.y + NODE_HEIGHT + 18))
@@ -109,54 +116,38 @@ export function ConversationKnowledgeGraphPreview({
   )
 }
 
-function focusGraph(
+function projectGraph(
   graph: ConversationKnowledgeGraph,
-  focusedNodeId: string | null
+  focusedNodeId: string | null,
+  projectId: string | null
 ): ConversationKnowledgeGraph {
-  if (!focusedNodeId) {
-    const recentKnowledgeIds = new Set(
-      graph.nodes
-        .filter((node) => node.type === 'knowledge')
-        .sort(
-          (left, right) =>
-            timestamp(right.item?.source.updatedAt) - timestamp(left.item?.source.updatedAt)
-        )
-        .slice(0, 12)
-        .map((node) => node.id)
-    )
-    const candidateEdges = graph.edges.filter((edge) => recentKnowledgeIds.has(edge.target))
-    const structuralIds = new Set(
-      graph.nodes
-        .filter((node) => candidateEdges.some((edge) => edge.source === node.id))
-        .sort((left, right) => right.itemCount - left.itemCount)
-        .slice(0, 24)
-        .map((node) => node.id)
-    )
-    const visibleEdges = candidateEdges.filter((edge) => structuralIds.has(edge.source))
-    const visibleIds = new Set([
-      ...recentKnowledgeIds,
-      ...visibleEdges.flatMap((edge) => [edge.source, edge.target])
-    ])
-    return {
-      nodes: graph.nodes.filter((node) => visibleIds.has(node.id)),
-      edges: visibleEdges
-    }
-  }
-  const relatedIds = new Set(
-    graph.edges
-      .filter((edge) => edge.source === focusedNodeId || edge.target === focusedNodeId)
-      .flatMap((edge) => [edge.source, edge.target])
+  const projectIds = new Set(
+    graph.nodes.filter((node) => node.type === 'project').map((node) => node.id)
   )
-  relatedIds.add(focusedNodeId)
-  return {
-    nodes: graph.nodes.filter((node) => relatedIds.has(node.id)),
-    edges: graph.edges.filter((edge) => relatedIds.has(edge.source) && relatedIds.has(edge.target))
-  }
-}
-
-function timestamp(value: string | null | undefined): number {
-  const parsed = Date.parse(value ?? '')
-  return Number.isNaN(parsed) ? 0 : parsed
+  const requestedProject = projectId ? `project:${projectId}` : null
+  const selectedProject =
+    requestedProject && projectIds.has(requestedProject)
+      ? requestedProject
+      : focusedNodeId && projectIds.has(focusedNodeId)
+        ? focusedNodeId
+        : null
+  const projectKnowledgeIds = new Set(
+    graph.edges
+      .filter(
+        (edge) =>
+          projectIds.has(edge.source) && (!selectedProject || edge.source === selectedProject)
+      )
+      .map((edge) => edge.target)
+  )
+  const edges = graph.edges.filter(
+    (edge) =>
+      (!selectedProject && projectIds.has(edge.source)) ||
+      (selectedProject && projectIds.has(edge.source) && projectKnowledgeIds.has(edge.target)) ||
+      projectKnowledgeIds.has(edge.source) ||
+      projectKnowledgeIds.has(edge.target)
+  )
+  const ids = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
+  return { nodes: graph.nodes.filter((node) => ids.has(node.id)), edges }
 }
 
 function positionGraphNodes(graph: ConversationKnowledgeGraph): PositionedNode[] {
