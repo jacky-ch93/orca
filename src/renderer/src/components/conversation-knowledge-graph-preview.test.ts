@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ConversationKnowledgeGraph } from '../../../shared/conversation-knowledge-graph'
 import {
   focusConversationKnowledgeGraph,
+  positionConversationKnowledgeGraphNodes,
   toggleFocusedNode
 } from './conversation-knowledge-graph-preview'
 
@@ -38,5 +39,16 @@ describe('focusConversationKnowledgeGraph', () => {
 
     expect(toggleFocusedNode(focused, 'knowledge:one', 'project', 'orca')).toBeNull()
     expect(toggleFocusedNode(null, 'knowledge:one', 'project', 'orca')).toEqual(focused)
+  })
+
+  it('spreads knowledge summaries to the available right edge', () => {
+    const narrow = positionConversationKnowledgeGraphNodes(graph, 630)
+    const wide = positionConversationKnowledgeGraphNodes(graph, 900)
+    const narrowKnowledge = narrow.find((node) => node.id === 'knowledge:one')
+    const wideKnowledge = wide.find((node) => node.id === 'knowledge:one')
+
+    expect(narrowKnowledge?.x).toBe(436)
+    expect(wideKnowledge?.x).toBe(706)
+    expect(wide.find((node) => node.id === 'topic:git')?.x).toBe(18)
   })
 })

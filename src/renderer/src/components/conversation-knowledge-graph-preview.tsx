@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   ConversationKnowledgeGraph,
   ConversationKnowledgeGraphNode
@@ -10,7 +10,8 @@ type FocusedNode = { id: string; viewMode: 'all' | 'project'; projectId: string 
 
 const NODE_WIDTH = 176
 const NODE_HEIGHT = 64
-const COLUMN_X = { project: 18, worktree: 210, topic: 18, entity: 210, knowledge: 430 } as const
+const GRAPH_SIDE_PADDING = 18
+const GRAPH_MIN_WIDTH = 630
 
 export function ConversationKnowledgeGraphPreview({
   graph,
@@ -28,6 +29,8 @@ export function ConversationKnowledgeGraphPreview({
   emptyMessage?: string
 }): React.JSX.Element {
   const [focusedNode, setFocusedNode] = useState<FocusedNode | null>(null)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+  const [viewportWidth, setViewportWidth] = useState(GRAPH_MIN_WIDTH)
   const focusedNodeId =
     focusedNode?.viewMode === viewMode && focusedNode.projectId === projectId
       ? focusedNode.id
@@ -36,9 +39,30 @@ export function ConversationKnowledgeGraphPreview({
     () => focusConversationKnowledgeGraph(graph, focusedNodeId),
     [graph, focusedNodeId]
   )
-  const positions = useMemo(() => positionGraphNodes(visibleGraph), [visibleGraph])
+  const canvasWidth = Math.max(GRAPH_MIN_WIDTH, viewportWidth)
+  const positions = useMemo(
+    () => positionConversationKnowledgeGraphNodes(visibleGraph, canvasWidth),
+    [canvasWidth, visibleGraph]
+  )
   const positionById = useMemo(() => new Map(positions.map((node) => [node.id, node])), [positions])
   const height = Math.max(240, ...positions.map((node) => node.y + NODE_HEIGHT + 18))
+
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport || typeof ResizeObserver === 'undefined') {
+      return
+    }
+    const measure = (): void => {
+      const nextWidth = viewport.clientWidth
+      if (nextWidth > 0) {
+        setViewportWidth((current) => (current === nextWidth ? current : nextWidth))
+      }
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(viewport)
+    return () => observer.disconnect()
+  }, [positions.length])
 
   if (!positions.length) {
     return (
@@ -49,8 +73,13 @@ export function ConversationKnowledgeGraphPreview({
   }
 
   return (
-    <div className="scrollbar-sleek overflow-auto rounded-lg border border-border/60 bg-muted/15">
-      <div className="relative min-w-[630px]" style={{ height }}>
+    <div
+      ref={viewportRef}
+      tabIndex={0}
+      aria-label="会话知识图谱"
+      className="scrollbar-sleek h-full min-h-0 overflow-auto overscroll-contain rounded-lg border border-border/60 bg-muted/15 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      <div className="relative" style={{ height, width: canvasWidth }}>
         <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden="true">
           {visibleGraph.edges.map((edge) => {
             const source = positionById.get(edge.source)
@@ -142,19 +171,40 @@ export function focusConversationKnowledgeGraph(
   }
 }
 
-function positionGraphNodes(graph: ConversationKnowledgeGraph): PositionedNode[] {
+export function positionConversationKnowledgeGraphNodes(
+  graph: ConversationKnowledgeGraph,
+  canvasWidth: number
+): PositionedNode[] {
+  const columnX = conversationKnowledgeGraphColumnPositions(canvasWidth)
   const ordered = [...graph.nodes].sort(
     (left, right) =>
-      COLUMN_X[left.type] - COLUMN_X[right.type] ||
+      columnX[left.type] - columnX[right.type] ||
       right.itemCount - left.itemCount ||
       left.label.localeCompare(right.label)
   )
   return ordered.map((node) => {
-    const peers = ordered.filter((peer) => COLUMN_X[peer.type] === COLUMN_X[node.type])
+    const peers = ordered.filter((peer) => columnX[peer.type] === columnX[node.type])
     return {
       ...node,
-      x: COLUMN_X[node.type],
+      x: columnX[node.type],
       y: 18 + peers.findIndex((peer) => peer.id === node.id) * 82
     }
   })
+}
+
+function conversationKnowledgeGraphColumnPositions(
+  canvasWidth: number
+): Record<ConversationKnowledgeGraphNode['type'], number> {
+  const knowledge = Math.max(
+    GRAPH_SIDE_PADDING + NODE_WIDTH * 2 + 32,
+    canvasWidth - GRAPH_SIDE_PADDING - NODE_WIDTH
+  )
+  const related = Math.round((GRAPH_SIDE_PADDING + knowledge) / 2)
+  return {
+    project: GRAPH_SIDE_PADDING,
+    topic: GRAPH_SIDE_PADDING,
+    worktree: related,
+    entity: related,
+    knowledge
+  }
 }

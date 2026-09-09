@@ -273,8 +273,8 @@ export default function ConversationKnowledgePanel({
           Knowledge.
         </div>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-border @min-[720px]/conversation-knowledge:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] @min-[720px]/conversation-knowledge:divide-x @min-[720px]/conversation-knowledge:divide-y-0">
-          <ScrollArea className="min-h-0 p-3">
+        <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(240px,1fr)_minmax(0,1fr)] divide-y divide-border @min-[720px]/conversation-knowledge:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] @min-[720px]/conversation-knowledge:grid-rows-[minmax(0,1fr)] @min-[720px]/conversation-knowledge:divide-x @min-[720px]/conversation-knowledge:divide-y-0">
+          <div className="min-h-0 min-w-0 overflow-hidden p-3">
             <ConversationKnowledgeGraphPreview
               graph={visibleGraph}
               selectedItemId={visibleSelected?.id}
@@ -285,8 +285,8 @@ export default function ConversationKnowledgePanel({
                 searchQuery.trim() ? '没有匹配的总结或关联节点。' : '暂无生成的会话知识。'
               }
             />
-          </ScrollArea>
-          <ScrollArea className="min-h-0">
+          </div>
+          <ScrollArea className="min-h-0 min-w-0">
             {visibleSelected ? (
               <KnowledgeDetail item={visibleSelected} />
             ) : (
