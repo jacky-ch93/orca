@@ -176,7 +176,7 @@ export default function ConversationKnowledgePanel({
   }
 
   return (
-    <div className="@container/conversation-knowledge flex min-h-0 flex-1 flex-col bg-background">
+    <div className="@container/conversation-knowledge flex min-h-0 flex-1 flex-col bg-transparent">
       <header className="flex items-start justify-between gap-3 border-b border-border p-3">
         <div>
           <h1 className="text-sm font-medium">

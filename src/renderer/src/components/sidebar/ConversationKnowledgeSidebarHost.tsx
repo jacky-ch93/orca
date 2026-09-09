@@ -38,7 +38,7 @@ export default function ConversationKnowledgeSidebarHost({
         side="left"
         showCloseButton={false}
         aria-describedby={undefined}
-        className="workspace-kanban-sheet-content bg-background p-0 sm:max-w-none"
+        className="workspace-kanban-sheet-content bg-worktree-sidebar/95 p-0 sm:max-w-none dark:bg-worktree-sidebar/95"
         overlayStyle={{
           top: WORKSPACE_TOP_CHROME_HEIGHT,
           bottom: statusBarVisible ? STATUS_BAR_RESERVE_HEIGHT : 0,
