@@ -18,6 +18,7 @@ export type ConversationKnowledgeItem = {
     topics: string[]
     conclusions: string[]
     entities: string[]
+    searchTerms?: string[]
   }
   generator: {
     agent: TuiAgent
@@ -91,7 +92,8 @@ export function conversationKnowledgeSearchText(item: ConversationKnowledgeItem)
     item.knowledge.summary,
     ...item.knowledge.topics,
     ...item.knowledge.conclusions,
-    ...item.knowledge.entities
+    ...item.knowledge.entities,
+    ...(item.knowledge.searchTerms ?? [])
   ]
     .join('\n')
     .toLocaleLowerCase()

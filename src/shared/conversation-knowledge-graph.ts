@@ -7,6 +7,7 @@ export type ConversationKnowledgeGraphNode = {
   type: 'topic' | 'entity' | 'project' | 'worktree' | 'knowledge'
   label: string
   itemCount: number
+  relevance?: number
   item?: ConversationKnowledgeItem
 }
 

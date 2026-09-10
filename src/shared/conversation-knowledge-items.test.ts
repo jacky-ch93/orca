@@ -19,7 +19,8 @@ const baseItem: ConversationKnowledgeItem = {
     summary: 'Loss of contact must not be treated as process exit.',
     topics: ['SSH', 'process lifecycle'],
     conclusions: ['Use live, unverifiable, and exited verdicts.'],
-    entities: ['Orca']
+    entities: ['Orca'],
+    searchTerms: ['remote reconnection safeguards']
   },
   generator: {
     agent: 'codex',
@@ -31,6 +32,9 @@ const baseItem: ConversationKnowledgeItem = {
 describe('conversation knowledge items', () => {
   it('searches generated knowledge instead of raw transcript text', () => {
     expect(searchConversationKnowledgeItems([baseItem], 'unverifiable')).toEqual([baseItem])
+    expect(searchConversationKnowledgeItems([baseItem], 'reconnection safeguards')).toEqual([
+      baseItem
+    ])
     expect(searchConversationKnowledgeItems([baseItem], 'unrelated raw prompt')).toEqual([])
   })
 

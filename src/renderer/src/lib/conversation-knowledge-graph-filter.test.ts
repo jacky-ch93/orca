@@ -7,7 +7,12 @@ import {
   searchConversationKnowledgeGraph
 } from './conversation-knowledge-graph-filter'
 
-const item = (id: string, title: string, summary: string): ConversationKnowledgeItem => ({
+const item = (
+  id: string,
+  title: string,
+  summary: string,
+  searchTerms: string[] = []
+): ConversationKnowledgeItem => ({
   id,
   source: {
     executionHostId: 'local',
@@ -17,7 +22,7 @@ const item = (id: string, title: string, summary: string): ConversationKnowledge
     cwd: '/repo',
     updatedAt: '2026-09-08T00:00:00.000Z'
   },
-  knowledge: { title, summary, conclusions: [], topics: [], entities: [] },
+  knowledge: { title, summary, conclusions: [], topics: [], entities: [], searchTerms },
   generator: { agent: 'codex', model: 'model', generatedAt: '2026-09-08T00:00:00.000Z' }
 })
 
@@ -31,7 +36,10 @@ const graph: ConversationKnowledgeGraph = {
       type: 'knowledge',
       label: 'Rebase changes',
       itemCount: 1,
-      item: item('one', 'Rebase changes', 'Updated the branch')
+      item: item('one', 'Rebase changes', 'Updated the branch', [
+        'git history cleanup',
+        'rewrite history safely'
+      ])
     },
     {
       id: 'knowledge:two',
@@ -59,15 +67,29 @@ describe('conversation knowledge graph filters', () => {
     const result = searchConversationKnowledgeGraph(graph, 'upd brnch')
     expect(conversationKnowledgeItemsInGraph(result).map((entry) => entry.id)).toEqual(['one'])
     expect(result.nodes.map((node) => node.id)).toEqual([
+      'knowledge:one',
       'project:one',
-      'topic:git',
-      'knowledge:one'
+      'topic:git'
     ])
   })
 
   it('searches a relation node and returns every connected summary', () => {
     const result = searchConversationKnowledgeGraph(graph, 'git')
     expect(conversationKnowledgeItemsInGraph(result).map((entry) => entry.id)).toEqual([
+      'one',
+      'two'
+    ])
+  })
+
+  it('searches generated semantic aliases and ranks direct matches first', () => {
+    const reversedGraph = { ...graph, nodes: graph.nodes.toReversed() }
+    const semanticResult = searchConversationKnowledgeGraph(reversedGraph, 'rewrite history')
+    expect(conversationKnowledgeItemsInGraph(semanticResult).map((entry) => entry.id)).toEqual([
+      'one'
+    ])
+
+    const rankedResult = searchConversationKnowledgeGraph(reversedGraph, 'git')
+    expect(conversationKnowledgeItemsInGraph(rankedResult).map((entry) => entry.id)).toEqual([
       'one',
       'two'
     ])

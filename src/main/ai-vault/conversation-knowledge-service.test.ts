@@ -17,6 +17,7 @@ describe('ConversationKnowledgeService', () => {
       topics: ['SSH'],
       conclusions: ['Do not infer exit.'],
       entities: ['Orca'],
+      searchTerms: ['remote disconnect'],
       agent: 'codex',
       model: 'gpt-5'
     })
@@ -54,6 +55,7 @@ describe('ConversationKnowledgeService', () => {
         topics: [],
         conclusions: [],
         entities: [],
+        searchTerms: [],
         agent: 'codex',
         model: 'gpt-5'
       })
@@ -86,6 +88,7 @@ describe('ConversationKnowledgeService', () => {
       topics: [],
       conclusions: [],
       entities: [],
+      searchTerms: [],
       agent: 'codex',
       model: 'gpt-5'
     })

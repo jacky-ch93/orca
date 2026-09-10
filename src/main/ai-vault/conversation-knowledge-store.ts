@@ -94,6 +94,7 @@ function isKnowledgeItem(value: unknown): value is ConversationKnowledgeItem {
     Array.isArray(item.knowledge.topics) &&
     Array.isArray(item.knowledge.conclusions) &&
     Array.isArray(item.knowledge.entities) &&
+    (item.knowledge.searchTerms === undefined || Array.isArray(item.knowledge.searchTerms)) &&
     typeof item.generator?.agent === 'string' &&
     typeof item.generator.model === 'string' &&
     typeof item.generator.generatedAt === 'string'

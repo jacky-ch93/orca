@@ -40,8 +40,8 @@ export async function enrichAiVaultSession(input: {
     'You are an information curator for a developer workspace.',
     `Write all human-readable fields in ${summaryLanguage(input.language)}.`,
     'Summarize the conversation below as strict JSON only, with this schema:',
-    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"]}',
-    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters.',
+    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"],"searchTerms":["4-8 alternate phrases, synonyms, or likely search queries"]}',
+    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters. Keep search terms short and include common English technical aliases when useful.',
     `Conversation title: ${input.session.title}`,
     transcript || '(conversation has no readable user/assistant messages)'
   ].join('\n\n')
@@ -152,6 +152,9 @@ function summaryLanguage(language: string | undefined): string {
   if (normalized.startsWith('es')) {
     return 'Spanish'
   }
+  if (normalized.startsWith('fr')) {
+    return 'French'
+  }
   return 'English'
 }
 
@@ -175,7 +178,10 @@ function isUnsupportedModelFailure(result: { failureOutput?: { stderr: string } 
 
 export function parseConversationKnowledgeOutput(
   rawOutput: string
-): Pick<AiVaultSessionEnrichment, 'title' | 'summary' | 'topics' | 'conclusions' | 'entities'> {
+): Pick<
+  AiVaultSessionEnrichment,
+  'title' | 'summary' | 'topics' | 'conclusions' | 'entities' | 'searchTerms'
+> {
   const text = rawOutput
     .trim()
     .replace(/^```(?:json)?\s*/i, '')
@@ -194,7 +200,8 @@ export function parseConversationKnowledgeOutput(
     summary: value.summary.trim().slice(0, 2_000),
     topics: normalizeLabels(value.topics, 12),
     conclusions: normalizeLabels(value.conclusions, 12),
-    entities: normalizeLabels(value.entities, 20)
+    entities: normalizeLabels(value.entities, 20),
+    searchTerms: normalizeLabels(value.searchTerms ?? [], 16)
   }
 }
 
@@ -216,6 +223,7 @@ function isEnrichment(value: unknown): value is {
   topics: string[]
   conclusions: string[]
   entities: string[]
+  searchTerms?: string[]
 } {
   if (!value || typeof value !== 'object') {
     return false
@@ -228,9 +236,13 @@ function isEnrichment(value: unknown): value is {
     Array.isArray(record.topics) &&
     Array.isArray(record.conclusions) &&
     Array.isArray(record.entities) &&
-    [...record.topics, ...record.conclusions, ...record.entities].every(
-      (entry) => typeof entry === 'string'
-    )
+    (record.searchTerms === undefined || Array.isArray(record.searchTerms)) &&
+    [
+      ...record.topics,
+      ...record.conclusions,
+      ...record.entities,
+      ...(record.searchTerms ?? [])
+    ].every((entry) => typeof entry === 'string')
   )
 }
 

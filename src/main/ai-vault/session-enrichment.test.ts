@@ -26,15 +26,25 @@ describe('parseConversationKnowledgeOutput', () => {
           "summary": " The session established the SSH lifecycle contract. ",
           "topics": ["SSH", "SSH", "process lifecycle"],
           "conclusions": ["Loss of contact is unverifiable."],
-          "entities": ["Orca"]
+          "entities": ["Orca"],
+          "searchTerms": ["remote disconnect", "remote disconnect", "SSH recovery"]
         }
       \`\`\``)
     ).toEqual({
       summary: 'The session established the SSH lifecycle contract.',
       topics: ['SSH', 'process lifecycle'],
       conclusions: ['Loss of contact is unverifiable.'],
-      entities: ['Orca']
+      entities: ['Orca'],
+      searchTerms: ['remote disconnect', 'SSH recovery']
     })
+  })
+
+  it('accepts legacy structured responses without search aliases', () => {
+    expect(
+      parseConversationKnowledgeOutput(
+        '{"summary":"Summary","topics":[],"conclusions":[],"entities":[]}'
+      ).searchTerms
+    ).toEqual([])
   })
 
   it('rejects prose so failed generation cannot become cached knowledge', () => {

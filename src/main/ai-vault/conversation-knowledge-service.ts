@@ -254,7 +254,8 @@ export class ConversationKnowledgeService {
         summary: enrichment.summary,
         topics: enrichment.topics,
         conclusions: enrichment.conclusions,
-        entities: enrichment.entities
+        entities: enrichment.entities,
+        searchTerms: enrichment.searchTerms
       },
       generator: {
         agent: args.generatorAgent,

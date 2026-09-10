@@ -198,6 +198,7 @@ export function positionConversationKnowledgeGraphNodes(
   const ordered = [...graph.nodes].sort(
     (left, right) =>
       columnX[left.type] - columnX[right.type] ||
+      (right.relevance ?? 0) - (left.relevance ?? 0) ||
       right.itemCount - left.itemCount ||
       left.label.localeCompare(right.label)
   )

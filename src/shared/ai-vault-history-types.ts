@@ -33,6 +33,7 @@ export type AiVaultSessionEnrichment = {
   topics: string[]
   conclusions: string[]
   entities: string[]
+  searchTerms: string[]
   agent: TuiAgent
   model: string
 }

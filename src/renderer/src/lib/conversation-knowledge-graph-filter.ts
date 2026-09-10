@@ -44,34 +44,46 @@ export function searchConversationKnowledgeGraph(
   if (!tokens.length) {
     return graph
   }
-  const matchedNodeIds = new Set(
-    graph.nodes.filter((node) => nodeMatches(node, tokens)).map((node) => node.id)
-  )
-  const knowledgeIds = new Set(
-    graph.nodes
-      .filter((node) => node.type === 'knowledge' && matchedNodeIds.has(node.id))
-      .map((node) => node.id)
-  )
-  for (const edge of graph.edges) {
-    if (matchedNodeIds.has(edge.source) || matchedNodeIds.has(edge.target)) {
-      const source = graph.nodes.find((node) => node.id === edge.source)
-      const target = graph.nodes.find((node) => node.id === edge.target)
-      if (source?.type === 'knowledge') {
-        knowledgeIds.add(source.id)
-      }
-      if (target?.type === 'knowledge') {
-        knowledgeIds.add(target.id)
-      }
+  const nodeById = new Map(graph.nodes.map((node) => [node.id, node]))
+  const directScores = new Map<string, number>()
+  const knowledgeScores = new Map<string, number>()
+  for (const node of graph.nodes) {
+    const score = scoreNode(node, tokens)
+    if (score === null) {
+      continue
+    }
+    directScores.set(node.id, score)
+    if (node.type === 'knowledge') {
+      knowledgeScores.set(node.id, score)
     }
   }
+  for (const edge of graph.edges) {
+    addRelatedKnowledgeScore(edge.source, edge.target, nodeById, directScores, knowledgeScores)
+    addRelatedKnowledgeScore(edge.target, edge.source, nodeById, directScores, knowledgeScores)
+  }
   const edges = graph.edges.filter(
-    (edge) => knowledgeIds.has(edge.source) || knowledgeIds.has(edge.target)
+    (edge) => knowledgeScores.has(edge.source) || knowledgeScores.has(edge.target)
   )
   const ids = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
-  for (const id of knowledgeIds) {
+  for (const id of knowledgeScores.keys()) {
     ids.add(id)
   }
-  return { nodes: graph.nodes.filter((node) => ids.has(node.id)), edges }
+  const originalOrder = new Map(graph.nodes.map((node, index) => [node.id, index]))
+  const nodes = graph.nodes
+    .filter((node) => ids.has(node.id))
+    .map((node) => ({
+      ...node,
+      relevance:
+        directScores.get(node.id) ??
+        knowledgeScores.get(node.id) ??
+        connectedKnowledgeScore(node.id, edges, knowledgeScores) * 0.25
+    }))
+    .sort(
+      (left, right) =>
+        (right.relevance ?? 0) - (left.relevance ?? 0) ||
+        (originalOrder.get(left.id) ?? 0) - (originalOrder.get(right.id) ?? 0)
+    )
+  return { nodes, edges }
 }
 
 export function conversationKnowledgeItemsInGraph(
@@ -80,20 +92,76 @@ export function conversationKnowledgeItemsInGraph(
   return graph.nodes.flatMap((node) => (node.type === 'knowledge' && node.item ? [node.item] : []))
 }
 
-function nodeMatches(node: ConversationKnowledgeGraphNode, tokens: string[]): boolean {
-  const fields = [
-    node.label,
-    ...(node.item
-      ? [
-          conversationKnowledgeSearchText(node.item),
-          node.item.source.sessionId,
-          node.item.source.agent,
-          node.item.source.cwd ?? ''
-        ]
-      : [])
+function addRelatedKnowledgeScore(
+  matchedId: string,
+  relatedId: string,
+  nodeById: ReadonlyMap<string, ConversationKnowledgeGraphNode>,
+  directScores: ReadonlyMap<string, number>,
+  knowledgeScores: Map<string, number>
+): void {
+  const score = directScores.get(matchedId)
+  if (score === undefined || nodeById.get(relatedId)?.type !== 'knowledge') {
+    return
+  }
+  knowledgeScores.set(relatedId, Math.max(knowledgeScores.get(relatedId) ?? 0, score * 0.6))
+}
+
+function connectedKnowledgeScore(
+  nodeId: string,
+  edges: readonly { source: string; target: string }[],
+  knowledgeScores: ReadonlyMap<string, number>
+): number {
+  let score = 0
+  for (const edge of edges) {
+    const relatedId =
+      edge.source === nodeId ? edge.target : edge.target === nodeId ? edge.source : null
+    if (relatedId) {
+      score = Math.max(score, knowledgeScores.get(relatedId) ?? 0)
+    }
+  }
+  return score
+}
+
+function scoreNode(node: ConversationKnowledgeGraphNode, tokens: readonly string[]): number | null {
+  const fields = weightedSearchFields(node).map((field) => ({
+    ...field,
+    value: normalizeText(field.value)
+  }))
+  let total = 0
+  for (const token of tokens) {
+    let best = 0
+    for (const field of fields) {
+      best = Math.max(best, fuzzyMatchScore(field.value, token) * field.weight)
+    }
+    if (best === 0) {
+      return null
+    }
+    total += best
+  }
+  return total / tokens.length
+}
+
+function weightedSearchFields(
+  node: ConversationKnowledgeGraphNode
+): { value: string; weight: number }[] {
+  const item = node.item
+  if (!item) {
+    return [{ value: node.label, weight: 10 }]
+  }
+  return [
+    { value: node.label, weight: 10 },
+    { value: item.knowledge.title ?? '', weight: 10 },
+    ...item.knowledge.topics.map((value) => ({ value, weight: 9 })),
+    ...(item.knowledge.searchTerms ?? []).map((value) => ({ value, weight: 9 })),
+    ...item.knowledge.entities.map((value) => ({ value, weight: 8 })),
+    { value: item.source.title, weight: 8 },
+    ...item.knowledge.conclusions.map((value) => ({ value, weight: 6 })),
+    { value: item.knowledge.summary, weight: 4 },
+    { value: conversationKnowledgeSearchText(item), weight: 2 },
+    { value: item.source.sessionId, weight: 1 },
+    { value: item.source.agent, weight: 1 },
+    { value: item.source.cwd ?? '', weight: 1 }
   ]
-  const normalizedFields = fields.map(normalizeText)
-  return tokens.every((token) => normalizedFields.some((field) => fuzzyContains(field, token)))
 }
 
 function normalizeQuery(query: string): string[] {
@@ -104,18 +172,37 @@ function normalizeText(value: string): string {
   return value.normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, ' ').trim()
 }
 
-function fuzzyContains(value: string, query: string): boolean {
+function fuzzyMatchScore(value: string, query: string): number {
+  if (!value || !query) {
+    return 0
+  }
+  if (value === query) {
+    return 1
+  }
+  if (value.startsWith(query)) {
+    return 0.95
+  }
   if (value.includes(query)) {
-    return true
+    const words = value.split(/[^\p{L}\p{N}]+/u)
+    return words.some((word) => word.startsWith(query)) ? 0.9 : 0.8
+  }
+  if (query.length < 2) {
+    return 0
   }
   let queryIndex = 0
-  for (const character of value) {
+  let firstMatch = -1
+  let lastMatch = -1
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]
     if (character === query[queryIndex]) {
+      firstMatch = firstMatch === -1 ? index : firstMatch
+      lastMatch = index
       queryIndex += 1
     }
     if (queryIndex === query.length) {
-      return true
+      const density = query.length / (lastMatch - firstMatch + 1)
+      return density >= 0.55 ? 0.45 + density * 0.25 : 0
     }
   }
-  return false
+  return 0
 }
