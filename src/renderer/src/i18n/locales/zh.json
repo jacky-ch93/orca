@@ -1,7 +1,75 @@
 {
   "conversationKnowledge": {
     "name": "会话知识",
-    "graph": "会话知识图谱"
+    "graph": "会话知识图谱",
+    "description": "从智能体历史中生成主题、结论和关联关系。",
+    "status": {
+      "indexing": "正在生成",
+      "indexed": "已生成",
+      "progress": "{{state}} · {{completed}}/{{total}} · {{failed}} 项失败"
+    },
+    "items": {
+      "count": "显示 {{visible}} 项，共 {{total}} 项",
+      "empty": "暂无知识项"
+    },
+    "scope": {
+      "ariaLabel": "知识图谱展示范围",
+      "all": "全部",
+      "project": "按项目"
+    },
+    "search": {
+      "ariaLabel": "搜索会话知识",
+      "placeholder": "搜索总结或节点"
+    },
+    "generateAll": "生成全部",
+    "regenerateAll": "重新生成全部",
+    "stop": "停止生成",
+    "configurationRequired": "请在设置 → 实验性 → 会话知识中选择已启用的摘要智能体和模型。",
+    "empty": {
+      "search": "没有匹配的总结或关联节点。",
+      "generated": "暂无生成的会话知识。",
+      "selection": "选择主题或总结节点以查看详情和来源。"
+    },
+    "error": {
+      "load": "无法加载已生成的会话知识。",
+      "start": "无法开始生成会话知识。",
+      "stop": "无法停止生成会话知识。"
+    },
+    "detail": {
+      "generatedBy": "由 {{agent}} · {{model}} 生成",
+      "summary": "总结",
+      "conclusions": "主要结论",
+      "topics": "主题",
+      "entities": "实体",
+      "source": "来源",
+      "openSessionHistory": "打开智能体会话历史"
+    },
+    "nodeType": {
+      "project": "项目",
+      "worktree": "工作树",
+      "topic": "主题",
+      "entity": "实体",
+      "knowledge": "总结"
+    },
+    "settings": {
+      "description": "添加图谱和详情工作区，用于浏览生成的主题、结论、项目、工作树和来源会话。",
+      "searchDescription": "基于智能体会话历史构建可搜索的知识层。",
+      "toggle": "启用或关闭会话知识",
+      "summaryAgent": "摘要智能体",
+      "chooseAgent": "选择已启用的智能体",
+      "agentHelp": "仅显示已检测到、已启用且支持后台生成的智能体。",
+      "summaryModel": "摘要模型",
+      "keyword": {
+        "conversation": "会话",
+        "history": "历史",
+        "knowledge": "知识",
+        "summary": "总结",
+        "graph": "图谱"
+      }
+    },
+    "enrichment": "AI 知识增强",
+    "enrichmentCopy": "每天检查一次新增或有变化的会话，并生成总结、主题、结论和图谱关联。",
+    "enrichmentToggle": "启用或关闭 AI 知识增强"
   },
   "app": {
     "recoverableError": {
@@ -86,6 +154,10 @@
     "activityWaitingSuffix": "等待活动"
   },
   "worktreeJumpPalette": {
+    "conversationKnowledgeHeader": "知识",
+    "searchScope": "搜索范围",
+    "allResults": "全部",
+    "knowledgeResults": "知识",
     "matchLabel": {
       "comment": "评论",
       "issue": "议题",

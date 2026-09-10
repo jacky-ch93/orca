@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { translate } from '@/i18n/i18n'
 import type {
   ConversationKnowledgeGraph,
   ConversationKnowledgeGraphNode
@@ -19,7 +21,7 @@ export function ConversationKnowledgeGraphPreview({
   onSelectItem,
   viewMode = 'all',
   projectId = null,
-  emptyMessage = 'No generated knowledge yet.'
+  emptyMessage
 }: {
   graph: ConversationKnowledgeGraph
   selectedItemId?: string | null
@@ -28,6 +30,7 @@ export function ConversationKnowledgeGraphPreview({
   projectId?: string | null
   emptyMessage?: string
 }): React.JSX.Element {
+  useTranslation()
   const [focusedNode, setFocusedNode] = useState<FocusedNode | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const [viewportWidth, setViewportWidth] = useState(GRAPH_MIN_WIDTH)
@@ -67,7 +70,8 @@ export function ConversationKnowledgeGraphPreview({
   if (!positions.length) {
     return (
       <div className="flex min-h-52 items-center justify-center px-6 text-center text-sm text-muted-foreground">
-        {emptyMessage}
+        {emptyMessage ??
+          translate('conversationKnowledge.empty.generated', 'No generated knowledge yet.')}
       </div>
     )
   }
@@ -76,7 +80,7 @@ export function ConversationKnowledgeGraphPreview({
     <div
       ref={viewportRef}
       tabIndex={0}
-      aria-label="会话知识图谱"
+      aria-label={translate('conversationKnowledge.graph', 'Conversation Knowledge Graph')}
       className="scrollbar-sleek h-full min-h-0 overflow-auto overscroll-contain rounded-lg border border-border/60 bg-muted/15 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <div className="relative" style={{ height, width: canvasWidth }}>
@@ -127,7 +131,7 @@ export function ConversationKnowledgeGraphPreview({
           >
             <span className="block truncate text-xs font-medium">{node.label}</span>
             <span className="mt-1 block text-[10px] capitalize text-muted-foreground">
-              {node.type} · {node.itemCount}
+              {conversationKnowledgeNodeTypeLabel(node.type)} · {node.itemCount}
             </span>
             {node.item ? (
               <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
@@ -139,6 +143,21 @@ export function ConversationKnowledgeGraphPreview({
       </div>
     </div>
   )
+}
+
+function conversationKnowledgeNodeTypeLabel(type: ConversationKnowledgeGraphNode['type']): string {
+  switch (type) {
+    case 'project':
+      return translate('conversationKnowledge.nodeType.project', 'Project')
+    case 'worktree':
+      return translate('conversationKnowledge.nodeType.worktree', 'Worktree')
+    case 'topic':
+      return translate('conversationKnowledge.nodeType.topic', 'Topic')
+    case 'entity':
+      return translate('conversationKnowledge.nodeType.entity', 'Entity')
+    case 'knowledge':
+      return translate('conversationKnowledge.nodeType.knowledge', 'Summary')
+  }
 }
 
 export function toggleFocusedNode(

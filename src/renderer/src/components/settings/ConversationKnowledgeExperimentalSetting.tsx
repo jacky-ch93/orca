@@ -14,6 +14,7 @@ import { SettingsSwitch } from './SettingsFormControls'
 import { SearchableSetting } from './SearchableSetting'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
 import { getExperimentalSearchEntry } from './experimental-search'
+import { useTranslation } from 'react-i18next'
 
 type Props = {
   settings: GlobalSettings
@@ -21,6 +22,7 @@ type Props = {
 }
 
 export function ConversationKnowledgeExperimentalSetting({ settings, updateSettings }: Props) {
+  useTranslation()
   const searchEntry = getExperimentalSearchEntry().conversationKnowledge
   const detectedAgentIds = useAppStore((s) => s.detectedAgentIds)
   const knowledgeAgents = ALL_TUI_AGENTS.filter(
@@ -109,10 +111,10 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 shrink space-y-0.5">
-          <Label>{translate('conversationKnowledge.name', '会话知识')}</Label>
+          <Label>{translate('conversationKnowledge.name', 'Conversation Knowledge')}</Label>
           <p className="text-xs text-muted-foreground">
             {translate(
-              'auto.components.settings.ExperimentalPane.conversationKnowledgeCopy',
+              'conversationKnowledge.settings.description',
               'Adds a graph and detail workspace for exploring generated topics, conclusions, projects, worktrees, and source sessions.'
             )}
           </p>
@@ -120,8 +122,8 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
         <SettingsSwitch
           checked={settings.conversationKnowledgeEnabled === true}
           ariaLabel={translate(
-            'auto.components.settings.ExperimentalPane.conversationKnowledgeToggle',
-            '启用会话知识'
+            'conversationKnowledge.settings.toggle',
+            'Toggle Conversation Knowledge'
           )}
           onChange={() =>
             updateSettings({
@@ -161,7 +163,9 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
           {settings.conversationKnowledgeEnrichmentEnabled === true ? (
             <div className="space-y-3 border-t border-border pt-3">
               <div>
-                <p className="mb-1.5 text-xs font-medium">Summary agent</p>
+                <p className="mb-1.5 text-xs font-medium">
+                  {translate('conversationKnowledge.settings.summaryAgent', 'Summary agent')}
+                </p>
                 <Select
                   value={selectedKnowledgeAgent ?? undefined}
                   onValueChange={(value) => {
@@ -174,7 +178,12 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
                   }}
                 >
                   <SelectTrigger size="sm" className="w-full max-w-72">
-                    <SelectValue placeholder="Choose an enabled agent" />
+                    <SelectValue
+                      placeholder={translate(
+                        'conversationKnowledge.settings.chooseAgent',
+                        'Choose an enabled agent'
+                      )}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {knowledgeAgents.map((agent) => (
@@ -185,12 +194,17 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
                   </SelectContent>
                 </Select>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Only detected, enabled agents that support background generation are shown.
+                  {translate(
+                    'conversationKnowledge.settings.agentHelp',
+                    'Only detected, enabled agents that support background generation are shown.'
+                  )}
                 </p>
               </div>
               {selectedKnowledgeAgent ? (
                 <div>
-                  <p className="mb-1.5 text-xs font-medium">Summary model</p>
+                  <p className="mb-1.5 text-xs font-medium">
+                    {translate('conversationKnowledge.settings.summaryModel', 'Summary model')}
+                  </p>
                   <Select
                     value={
                       settings.conversationKnowledgeEnrichmentModel ??
