@@ -37,6 +37,8 @@
     },
     "detail": {
       "generatedBy": "{{agent}} · {{model}} により生成",
+      "created": "作成",
+      "modified": "最終更新",
       "summary": "要約",
       "conclusions": "主な結論",
       "topics": "トピック",

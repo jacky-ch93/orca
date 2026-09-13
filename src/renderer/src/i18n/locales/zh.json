@@ -37,6 +37,8 @@
     },
     "detail": {
       "generatedBy": "由 {{agent}} · {{model}} 生成",
+      "created": "创建于",
+      "modified": "最后修改于",
       "summary": "总结",
       "conclusions": "主要结论",
       "topics": "主题",

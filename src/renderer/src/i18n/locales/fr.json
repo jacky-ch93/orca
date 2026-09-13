@@ -37,6 +37,8 @@
     },
     "detail": {
       "generatedBy": "Généré par {{agent}} · {{model}}",
+      "created": "Créée",
+      "modified": "Dernière modification",
       "summary": "Résumé",
       "conclusions": "Conclusions principales",
       "topics": "Sujets",

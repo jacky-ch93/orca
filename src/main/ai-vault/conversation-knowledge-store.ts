@@ -90,6 +90,10 @@ function isKnowledgeItem(value: unknown): value is ConversationKnowledgeItem {
     typeof item.id === 'string' &&
     typeof item.source?.sessionId === 'string' &&
     typeof item.source.title === 'string' &&
+    (item.source.createdAt === undefined ||
+      item.source.createdAt === null ||
+      typeof item.source.createdAt === 'string') &&
+    (item.source.modifiedAt === undefined || typeof item.source.modifiedAt === 'string') &&
     typeof item.knowledge?.summary === 'string' &&
     Array.isArray(item.knowledge.topics) &&
     Array.isArray(item.knowledge.conclusions) &&

@@ -5,6 +5,7 @@ import { translate } from '@/i18n/i18n'
 import { selectConversationHistoryTarget } from '@/lib/conversation-history-selection'
 import { useAppStore } from '@/store'
 import type { ConversationKnowledgeItem } from '../../../../shared/conversation-knowledge-items'
+import { SessionTime } from './ai-vault-session-time'
 
 export function ConversationKnowledgeDetail({
   item
@@ -37,6 +38,16 @@ export function ConversationKnowledgeDetail({
             { agent: item.generator.agent, model: item.generator.model }
           )}
         </p>
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            {translate('conversationKnowledge.detail.created', 'Created')}
+            <SessionTime value={item.source.createdAt} />
+          </span>
+          <span className="inline-flex items-center gap-1">
+            {translate('conversationKnowledge.detail.modified', 'Last modified')}
+            <SessionTime value={item.source.updatedAt ?? item.source.modifiedAt} />
+          </span>
+        </div>
       </div>
       <DetailSection title={translate('conversationKnowledge.detail.summary', 'Summary')}>
         <p className="text-sm leading-6">{item.knowledge.summary}</p>

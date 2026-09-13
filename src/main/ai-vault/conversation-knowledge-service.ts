@@ -22,6 +22,10 @@ import {
   isKnowledgeGenerationSession
 } from './conversation-knowledge-source-session'
 import { resolveKnowledgeTitle } from './conversation-knowledge-title'
+import {
+  conversationKnowledgeSource,
+  hydrateConversationKnowledgeSourceTimes
+} from './conversation-knowledge-source'
 import { cancelLocalGeneration } from '../text-generation/source-control-generation-lanes'
 
 // Keep one active process so a model switch can cancel the exact in-flight call.
@@ -241,14 +245,7 @@ export class ConversationKnowledgeService {
     )
     const item: ConversationKnowledgeItem = {
       id: `${session.executionHostId}:${session.agent}:${session.sessionId}`,
-      source: {
-        executionHostId: session.executionHostId,
-        agent: session.agent,
-        sessionId: session.sessionId,
-        title: session.title,
-        cwd: session.cwd,
-        updatedAt: session.updatedAt
-      },
+      source: conversationKnowledgeSource(session),
       knowledge: {
         title: knowledgeTitle,
         summary: enrichment.summary,
@@ -281,11 +278,14 @@ export class ConversationKnowledgeService {
       readSession: this.dependencies.readSession
     })
     await this.dependencies.store.remove([...legacyEmptyIds])
-    const visibleItems = items.filter(
-      (item) =>
-        !emptyIds.has(item.id) &&
-        !legacyEmptyIds.has(item.id) &&
-        !isConversationKnowledgeGenerationTitle(item.source.title)
+    const visibleItems = hydrateConversationKnowledgeSourceTimes(
+      items.filter(
+        (item) =>
+          !emptyIds.has(item.id) &&
+          !legacyEmptyIds.has(item.id) &&
+          !isConversationKnowledgeGenerationTitle(item.source.title)
+      ),
+      sourceSessions
     )
     if (!scopePaths?.length) {
       return visibleItems

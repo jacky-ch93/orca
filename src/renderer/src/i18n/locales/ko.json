@@ -37,6 +37,8 @@
     },
     "detail": {
       "generatedBy": "{{agent}} · {{model}}에서 생성",
+      "created": "생성",
+      "modified": "마지막 수정",
       "summary": "요약",
       "conclusions": "주요 결론",
       "topics": "주제",

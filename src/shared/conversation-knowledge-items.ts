@@ -10,7 +10,9 @@ export type ConversationKnowledgeItem = {
     sessionId: string
     title: string
     cwd: string | null
+    createdAt?: string | null
     updatedAt: string | null
+    modifiedAt?: string
   }
   knowledge: {
     title?: string

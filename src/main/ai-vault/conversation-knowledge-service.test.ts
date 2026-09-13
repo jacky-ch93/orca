@@ -10,7 +10,9 @@ describe('ConversationKnowledgeService', () => {
       sessionId: 'source-session',
       title: 'Remote process semantics',
       cwd: '/code/orca',
-      updatedAt: '2026-09-01T10:00:00.000Z'
+      createdAt: '2026-09-01T09:00:00.000Z',
+      updatedAt: '2026-09-01T10:00:00.000Z',
+      modifiedAt: '2026-09-01T10:00:01.000Z'
     } as AiVaultSession
     const enrich = vi.fn().mockResolvedValue({
       summary: 'Summary',
@@ -40,6 +42,10 @@ describe('ConversationKnowledgeService', () => {
       expect.objectContaining({ session, agent: 'codex', model: 'gpt-5' })
     )
     expect(item.source.agent).toBe('claude')
+    expect(item.source).toMatchObject({
+      createdAt: '2026-09-01T09:00:00.000Z',
+      modifiedAt: '2026-09-01T10:00:01.000Z'
+    })
     expect(item.generator.agent).toBe('codex')
     expect(upsert).toHaveBeenCalledWith(item)
   })
@@ -194,6 +200,32 @@ describe('ConversationKnowledgeService', () => {
 
     expect(await service.list()).toEqual([])
     expect(remove).toHaveBeenCalledWith(['local:claude:legacy-empty'])
+  })
+
+  it('hydrates cached knowledge with current source session timestamps', async () => {
+    const currentSession = session('cached', {
+      createdAt: '2026-08-01T09:00:00.000Z',
+      updatedAt: null,
+      modifiedAt: '2026-09-02T11:00:00.000Z'
+    })
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([currentSession]),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
+      enrich: vi.fn(),
+      store: {
+        list: vi.fn().mockResolvedValue([knowledgeItem('cached')]),
+        upsert: vi.fn(),
+        remove: vi.fn()
+      }
+    })
+
+    const [item] = await service.list()
+
+    expect(item?.source).toMatchObject({
+      createdAt: '2026-08-01T09:00:00.000Z',
+      updatedAt: null,
+      modifiedAt: '2026-09-02T11:00:00.000Z'
+    })
   })
 })
 
