@@ -38,6 +38,9 @@ export type ConversationKnowledgeHandoffEntry = {
     kind: 'conversation' | 'tool-result'
     messageId: string
   }
+  lifecycle?: {
+    status: 'active' | 'superseded' | 'conflicted' | 'expired'
+  }
 }
 
 export type ConversationKnowledgeListResult = {
@@ -121,6 +124,9 @@ export function buildConversationKnowledgeContextPack(args: {
     .flatMap((item) =>
       (item.knowledge.handoff ?? [])
         .filter((entry) => entry.reliability === 'user-confirmed')
+        .filter(
+          (entry) => entry.lifecycle?.status === undefined || entry.lifecycle.status === 'active'
+        )
         .map((entry) => ({ entry, sessionId: item.source.sessionId }))
     )
     .slice(0, 8)
