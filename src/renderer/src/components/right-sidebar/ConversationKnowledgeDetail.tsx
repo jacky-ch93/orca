@@ -95,7 +95,9 @@ function HandoffList({
     <DetailSection title={translate('conversationKnowledge.detail.handoff', 'Agent handoff')}>
       <ul className="space-y-2">
         {entries.map((entry) => {
-          const included = entry.reliability === 'user-confirmed'
+          const active =
+            entry.lifecycle?.status === undefined || entry.lifecycle.status === 'active'
+          const included = entry.reliability === 'user-confirmed' && active
           return (
             <li
               key={`${entry.evidence.messageId}:${entry.text}`}
@@ -105,11 +107,24 @@ function HandoffList({
                 <Badge variant={included ? 'outline' : 'secondary'}>
                   {handoffReliabilityLabel(entry.reliability)}
                 </Badge>
+                {!active ? (
+                  <Badge variant="secondary">
+                    {handoffLifecycleLabel(entry.lifecycle?.status)}
+                  </Badge>
+                ) : null}
                 {included ? (
                   <span className="text-[11px] text-muted-foreground">
                     {translate(
                       'conversationKnowledge.detail.handoffIncluded',
                       'Included in agent context'
+                    )}
+                  </span>
+                ) : null}
+                {!active ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    {translate(
+                      'conversationKnowledge.detail.handoffExcluded',
+                      'Excluded from agent context'
                     )}
                   </span>
                 ) : null}
@@ -122,6 +137,21 @@ function HandoffList({
       </ul>
     </DetailSection>
   )
+}
+
+function handoffLifecycleLabel(
+  status: 'superseded' | 'conflicted' | 'expired' | 'active' | undefined
+): string {
+  switch (status) {
+    case 'superseded':
+      return translate('conversationKnowledge.detail.handoffSuperseded', 'Superseded')
+    case 'conflicted':
+      return translate('conversationKnowledge.detail.handoffConflicted', 'Conflicted')
+    case 'expired':
+      return translate('conversationKnowledge.detail.handoffExpired', 'Expired')
+    default:
+      return translate('conversationKnowledge.detail.handoffActive', 'Active')
+  }
 }
 
 function handoffReliabilityLabel(
