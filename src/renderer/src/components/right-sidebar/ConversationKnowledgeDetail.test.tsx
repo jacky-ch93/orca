@@ -51,6 +51,31 @@ describe('ConversationKnowledgeDetail', () => {
     expect(markup).toContain('Proposal')
     expect(markup).toContain('assistant-1')
   })
+
+  it('shows inactive handoff lifecycle states as excluded from agent context', () => {
+    const markup = renderToStaticMarkup(
+      <ConversationKnowledgeDetail
+        item={{
+          ...knowledgeItem(),
+          knowledge: {
+            ...knowledgeItem().knowledge,
+            handoff: [
+              {
+                kind: 'constraint',
+                text: 'Retired constraint.',
+                reliability: 'user-confirmed',
+                evidence: { kind: 'conversation', messageId: 'user-1' },
+                lifecycle: { status: 'superseded' }
+              }
+            ]
+          }
+        }}
+      />
+    )
+
+    expect(markup).toContain('Superseded')
+    expect(markup).toContain('Excluded from agent context')
+  })
 })
 
 function knowledgeItem(): ConversationKnowledgeItem {
