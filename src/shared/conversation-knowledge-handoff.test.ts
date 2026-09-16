@@ -93,4 +93,41 @@ describe('conversation knowledge handoff', () => {
       })
     ).toBe('')
   })
+
+  it('excludes superseded and conflicted claims from agent context', () => {
+    const context = buildConversationKnowledgeContextPack({
+      items: [
+        item({
+          handoff: [
+            {
+              kind: 'constraint',
+              text: 'Use the retired handoff policy.',
+              reliability: 'user-confirmed',
+              evidence: { kind: 'conversation', messageId: 'user-1' },
+              lifecycle: { status: 'superseded' }
+            },
+            {
+              kind: 'constraint',
+              text: 'Use the disputed handoff policy.',
+              reliability: 'user-confirmed',
+              evidence: { kind: 'conversation', messageId: 'user-2' },
+              lifecycle: { status: 'conflicted' }
+            },
+            {
+              kind: 'constraint',
+              text: 'Keep the active handoff policy.',
+              reliability: 'user-confirmed',
+              evidence: { kind: 'conversation', messageId: 'user-3' },
+              lifecycle: { status: 'active' }
+            }
+          ]
+        })
+      ],
+      cwd: '/code/orca'
+    })
+
+    expect(context).toContain('Keep the active handoff policy.')
+    expect(context).not.toContain('retired handoff policy')
+    expect(context).not.toContain('disputed handoff policy')
+  })
 })
