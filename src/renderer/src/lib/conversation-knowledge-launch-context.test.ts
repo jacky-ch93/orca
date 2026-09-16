@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { ConversationKnowledgeItem } from '../../../shared/conversation-knowledge-items'
-import { buildConversationKnowledgeLaunchPrompt } from './conversation-knowledge-launch-context'
+import {
+  buildConversationKnowledgeLaunchPrompt,
+  getConversationKnowledgeLaunchItems,
+  replaceConversationKnowledgeLaunchItems
+} from './conversation-knowledge-launch-context'
 
 const item: ConversationKnowledgeItem = {
   id: 'knowledge-1',
@@ -30,6 +34,13 @@ const item: ConversationKnowledgeItem = {
 }
 
 describe('buildConversationKnowledgeLaunchPrompt', () => {
+  it('keeps only the last successfully loaded launch context', () => {
+    replaceConversationKnowledgeLaunchItems([item])
+    expect(getConversationKnowledgeLaunchItems()).toEqual([item])
+    replaceConversationKnowledgeLaunchItems([])
+    expect(getConversationKnowledgeLaunchItems()).toEqual([])
+  })
+
   it('prefixes a task with same-host, same-worktree confirmed context', () => {
     expect(
       buildConversationKnowledgeLaunchPrompt({
