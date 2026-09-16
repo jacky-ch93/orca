@@ -21,11 +21,22 @@ export type ConversationKnowledgeItem = {
     conclusions: string[]
     entities: string[]
     searchTerms?: string[]
+    handoff?: ConversationKnowledgeHandoffEntry[]
   }
   generator: {
     agent: TuiAgent
     model: string
     generatedAt: string
+  }
+}
+
+export type ConversationKnowledgeHandoffEntry = {
+  kind: 'decision' | 'constraint' | 'progress' | 'open-loop'
+  text: string
+  reliability: 'user-confirmed' | 'verified' | 'inferred' | 'proposal'
+  evidence: {
+    kind: 'conversation' | 'tool-result'
+    messageId: string
   }
 }
 
@@ -99,4 +110,25 @@ export function conversationKnowledgeSearchText(item: ConversationKnowledgeItem)
   ]
     .join('\n')
     .toLocaleLowerCase()
+}
+
+export function buildConversationKnowledgeContextPack(args: {
+  items: readonly ConversationKnowledgeItem[]
+  cwd: string
+}): string {
+  const entries = args.items
+    .filter((item) => item.source.cwd === args.cwd)
+    .flatMap((item) =>
+      (item.knowledge.handoff ?? [])
+        .filter((entry) => entry.reliability === 'user-confirmed')
+        .map((entry) => ({ entry, sessionId: item.source.sessionId }))
+    )
+    .slice(0, 8)
+  if (!entries.length) {
+    return ''
+  }
+  return [
+    'Historical work context (source-backed; use only when relevant):',
+    ...entries.map(({ entry, sessionId }) => `- ${entry.kind}: ${entry.text} [${sessionId}]`)
+  ].join('\n')
 }

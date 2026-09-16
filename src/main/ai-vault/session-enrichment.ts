@@ -1,6 +1,10 @@
 import type { AiVaultSession } from '../../shared/ai-vault-types'
 import type { TuiAgent } from '../../shared/tui-agent'
 import type { AiVaultSessionEnrichment } from '../../shared/ai-vault-history-types'
+import {
+  normalizeConversationKnowledgeHandoff,
+  retainSourceBackedHandoff
+} from './conversation-knowledge-handoff-output'
 import { getCommitMessageAgentSpec } from '../../shared/commit-message-agent-spec'
 import { planCommitMessageGeneration } from '../../shared/commit-message-plan'
 import { spawnSourceControlAgent } from '../text-generation/source-control-agent-launch'
@@ -17,7 +21,7 @@ const MAX_SUMMARY_TRANSCRIPT_CHARS = 12_000
 
 export async function enrichAiVaultSession(input: {
   session: AiVaultSession
-  messages: readonly { role: string; text: string }[]
+  messages: readonly { id: string; role: string; text: string }[]
   agent: TuiAgent
   model?: string | null
   language?: string
@@ -32,7 +36,7 @@ export async function enrichAiVaultSession(input: {
     .filter((message) => message.text.trim() && ['user', 'assistant'].includes(message.role))
     .map(
       (message) =>
-        `${message.role.toUpperCase()}: ${redactConversationText(message.text.slice(0, MAX_SUMMARY_MESSAGE_CHARS))}`
+        `[${message.id}] ${message.role.toUpperCase()}: ${redactConversationText(message.text.slice(0, MAX_SUMMARY_MESSAGE_CHARS))}`
     )
     .join('\n\n')
     .slice(0, MAX_SUMMARY_TRANSCRIPT_CHARS)
@@ -40,8 +44,8 @@ export async function enrichAiVaultSession(input: {
     'You are an information curator for a developer workspace.',
     `Write all human-readable fields in ${summaryLanguage(input.language)}.`,
     'Summarize the conversation below as strict JSON only, with this schema:',
-    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"],"searchTerms":["4-8 alternate phrases, synonyms, or likely search queries"]}',
-    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters. Keep search terms short and include common English technical aliases when useful.',
+    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"],"searchTerms":["4-8 alternate phrases, synonyms, or likely search queries"],"handoff":[{"kind":"decision|constraint|progress|open-loop","text":"short statement","reliability":"user-confirmed|verified|inferred|proposal","evidence":{"kind":"conversation|tool-result","messageId":"source message id"}}]}',
+    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters. Keep search terms short and include common English technical aliases when useful. Only mark user-confirmed or verified when the transcript directly supports it; otherwise use inferred or proposal.',
     `Conversation title: ${input.session.title}`,
     transcript || '(conversation has no readable user/assistant messages)'
   ].join('\n\n')
@@ -94,12 +98,17 @@ export async function enrichAiVaultSession(input: {
     throw new Error(result.error)
   }
   const parsed = parseConversationKnowledgeOutput(result.rawOutput)
-  return { ...parsed, agent: input.agent, model: effectiveModel }
+  return {
+    ...parsed,
+    handoff: retainSourceBackedHandoff(parsed.handoff, input.messages),
+    agent: input.agent,
+    model: effectiveModel
+  }
 }
 
-export function selectConversationSummaryMessages(
-  messages: readonly { role: string; text: string }[]
-): readonly { role: string; text: string }[] {
+export function selectConversationSummaryMessages<
+  T extends { id: string; role: string; text: string }
+>(messages: readonly T[]): readonly T[] {
   const readable = messages.filter(
     (message) => message.text.trim() && ['user', 'assistant'].includes(message.role)
   )
@@ -180,7 +189,7 @@ export function parseConversationKnowledgeOutput(
   rawOutput: string
 ): Pick<
   AiVaultSessionEnrichment,
-  'title' | 'summary' | 'topics' | 'conclusions' | 'entities' | 'searchTerms'
+  'title' | 'summary' | 'topics' | 'conclusions' | 'entities' | 'searchTerms' | 'handoff'
 > {
   const text = rawOutput
     .trim()
@@ -201,7 +210,8 @@ export function parseConversationKnowledgeOutput(
     topics: normalizeLabels(value.topics, 12),
     conclusions: normalizeLabels(value.conclusions, 12),
     entities: normalizeLabels(value.entities, 20),
-    searchTerms: normalizeLabels(value.searchTerms ?? [], 16)
+    searchTerms: normalizeLabels(value.searchTerms ?? [], 16),
+    handoff: normalizeConversationKnowledgeHandoff(value.handoff ?? [])
   }
 }
 
@@ -224,6 +234,7 @@ function isEnrichment(value: unknown): value is {
   conclusions: string[]
   entities: string[]
   searchTerms?: string[]
+  handoff?: unknown[]
 } {
   if (!value || typeof value !== 'object') {
     return false
@@ -237,6 +248,7 @@ function isEnrichment(value: unknown): value is {
     Array.isArray(record.conclusions) &&
     Array.isArray(record.entities) &&
     (record.searchTerms === undefined || Array.isArray(record.searchTerms)) &&
+    (record.handoff === undefined || Array.isArray(record.handoff)) &&
     [
       ...record.topics,
       ...record.conclusions,

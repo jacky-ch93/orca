@@ -1,6 +1,7 @@
 import type { NativeChatRole } from './native-chat-types'
 import type { AiVaultAgent } from './ai-vault-types'
 import type { TuiAgent } from './tui-agent'
+import type { ConversationKnowledgeHandoffEntry } from './conversation-knowledge-items'
 
 export type AiVaultHistoryMessage = {
   id: string
@@ -34,6 +35,7 @@ export type AiVaultSessionEnrichment = {
   conclusions: string[]
   entities: string[]
   searchTerms: string[]
+  handoff: ConversationKnowledgeHandoffEntry[]
   agent: TuiAgent
   model: string
 }

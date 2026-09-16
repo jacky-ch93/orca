@@ -99,8 +99,45 @@ function isKnowledgeItem(value: unknown): value is ConversationKnowledgeItem {
     Array.isArray(item.knowledge.conclusions) &&
     Array.isArray(item.knowledge.entities) &&
     (item.knowledge.searchTerms === undefined || Array.isArray(item.knowledge.searchTerms)) &&
+    (item.knowledge.handoff === undefined || item.knowledge.handoff.every(isHandoffEntry)) &&
     typeof item.generator?.agent === 'string' &&
     typeof item.generator.model === 'string' &&
     typeof item.generator.generatedAt === 'string'
   )
+}
+
+function isHandoffEntry(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const record = toRecord(value)
+  if (!record) {
+    return false
+  }
+  const evidence = record.evidence
+  const evidenceRecord = toRecord(evidence)
+  if (!evidenceRecord) {
+    return false
+  }
+  return (
+    (record.kind === 'decision' ||
+      record.kind === 'constraint' ||
+      record.kind === 'progress' ||
+      record.kind === 'open-loop') &&
+    typeof record.text === 'string' &&
+    (record.reliability === 'user-confirmed' ||
+      record.reliability === 'verified' ||
+      record.reliability === 'inferred' ||
+      record.reliability === 'proposal') &&
+    (evidenceRecord.kind === 'conversation' || evidenceRecord.kind === 'tool-result') &&
+    typeof evidenceRecord.messageId === 'string'
+  )
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  return isRecord(value) ? value : null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object'
 }

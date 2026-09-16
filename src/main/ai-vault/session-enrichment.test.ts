@@ -5,6 +5,7 @@ import {
   resolveConversationKnowledgeModel,
   selectConversationSummaryMessages
 } from './session-enrichment'
+import { retainSourceBackedHandoff } from './conversation-knowledge-handoff-output'
 
 describe('parseConversationKnowledgeOutput', () => {
   it('redacts common credentials before history is sent to a generator', () => {
@@ -35,7 +36,8 @@ describe('parseConversationKnowledgeOutput', () => {
       topics: ['SSH', 'process lifecycle'],
       conclusions: ['Loss of contact is unverifiable.'],
       entities: ['Orca'],
-      searchTerms: ['remote disconnect', 'SSH recovery']
+      searchTerms: ['remote disconnect', 'SSH recovery'],
+      handoff: []
     })
   })
 
@@ -53,8 +55,41 @@ describe('parseConversationKnowledgeOutput', () => {
     )
   })
 
+  it('rejects a user-confirmed handoff when its evidence is not a user message', () => {
+    expect(
+      retainSourceBackedHandoff(
+        [
+          {
+            kind: 'decision',
+            text: 'Use the existing service.',
+            reliability: 'user-confirmed',
+            evidence: { kind: 'conversation', messageId: 'assistant-1' }
+          },
+          {
+            kind: 'constraint',
+            text: 'Keep paths cross-platform.',
+            reliability: 'user-confirmed',
+            evidence: { kind: 'conversation', messageId: 'user-1' }
+          }
+        ],
+        [
+          { id: 'assistant-1', role: 'assistant' },
+          { id: 'user-1', role: 'user' }
+        ]
+      )
+    ).toEqual([
+      {
+        kind: 'constraint',
+        text: 'Keep paths cross-platform.',
+        reliability: 'user-confirmed',
+        evidence: { kind: 'conversation', messageId: 'user-1' }
+      }
+    ])
+  })
+
   it('samples the beginning, dynamic middle, and ending of long sessions', () => {
     const messages = Array.from({ length: 30 }, (_, index) => ({
+      id: `message-${index}`,
       role: index % 2 === 0 ? 'user' : 'assistant',
       text: `message-${index}`
     }))

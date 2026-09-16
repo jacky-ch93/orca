@@ -252,7 +252,8 @@ export class ConversationKnowledgeService {
         topics: enrichment.topics,
         conclusions: enrichment.conclusions,
         entities: enrichment.entities,
-        searchTerms: enrichment.searchTerms
+        searchTerms: enrichment.searchTerms,
+        handoff: enrichment.handoff
       },
       generator: {
         agent: args.generatorAgent,

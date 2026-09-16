@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { translate } from '@/i18n/i18n'
 import { selectConversationHistoryTarget } from '@/lib/conversation-history-selection'
 import { useAppStore } from '@/store'
@@ -66,6 +67,7 @@ export function ConversationKnowledgeDetail({
         values={item.knowledge.entities}
         inline
       />
+      <HandoffList entries={item.knowledge.handoff ?? []} />
       <DetailSection title={translate('conversationKnowledge.detail.source', 'Source')}>
         <p className="text-xs text-muted-foreground">
           {item.source.agent} · {item.source.sessionId}
@@ -79,6 +81,62 @@ export function ConversationKnowledgeDetail({
       </DetailSection>
     </article>
   )
+}
+
+function HandoffList({
+  entries
+}: {
+  entries: NonNullable<ConversationKnowledgeItem['knowledge']['handoff']>
+}): React.JSX.Element | null {
+  if (!entries.length) {
+    return null
+  }
+  return (
+    <DetailSection title={translate('conversationKnowledge.detail.handoff', 'Agent handoff')}>
+      <ul className="space-y-2">
+        {entries.map((entry) => {
+          const included = entry.reliability === 'user-confirmed'
+          return (
+            <li
+              key={`${entry.evidence.messageId}:${entry.text}`}
+              className="rounded-md border border-border p-2"
+            >
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge variant={included ? 'outline' : 'secondary'}>
+                  {handoffReliabilityLabel(entry.reliability)}
+                </Badge>
+                {included ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    {translate(
+                      'conversationKnowledge.detail.handoffIncluded',
+                      'Included in agent context'
+                    )}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-sm leading-5">{entry.text}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{entry.evidence.messageId}</p>
+            </li>
+          )
+        })}
+      </ul>
+    </DetailSection>
+  )
+}
+
+function handoffReliabilityLabel(
+  reliability: NonNullable<ConversationKnowledgeItem['knowledge']['handoff']>[number]['reliability']
+): string {
+  switch (reliability) {
+    case 'user-confirmed':
+      return translate('conversationKnowledge.detail.handoffUserConfirmed', 'User confirmed')
+    case 'verified':
+      return translate('conversationKnowledge.detail.handoffVerified', 'Verified')
+    case 'inferred':
+      return translate('conversationKnowledge.detail.handoffInferred', 'Inferred')
+    case 'proposal':
+      return translate('conversationKnowledge.detail.handoffProposal', 'Proposal')
+  }
 }
 
 function DetailSection({
