@@ -4,6 +4,18 @@ import {
 } from '../../../shared/conversation-knowledge-items'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 
+let launchContextItems: readonly ConversationKnowledgeItem[] = []
+
+export function replaceConversationKnowledgeLaunchItems(
+  items: readonly ConversationKnowledgeItem[]
+): void {
+  launchContextItems = [...items]
+}
+
+export function getConversationKnowledgeLaunchItems(): readonly ConversationKnowledgeItem[] {
+  return launchContextItems
+}
+
 export function buildConversationKnowledgeLaunchPrompt(args: {
   prompt: string
   cwd: string

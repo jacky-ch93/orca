@@ -26,12 +26,17 @@ import { seedCommandCodeSubmittedPromptStatus } from '@/lib/command-code-prompt-
 import type { TuiAgent } from '../../../shared/tui-agent'
 import type { LaunchSource } from '../../../shared/telemetry-events'
 import { getConnectionIdFromState } from '@/lib/connection-context'
+import {
+  buildConversationKnowledgeLaunchPrompt,
+  getConversationKnowledgeLaunchItems
+} from '@/lib/conversation-knowledge-launch-context'
 import { resolveInitialNativeChatSessionOptions } from '@/components/native-chat/native-chat-launch-session-options'
 import { seedNativeChatAppliedSessionOptions } from '@/components/native-chat/native-chat-session-option-cache'
 import { launchAgentInStructuredNewTab } from '@/lib/launch-agent-in-new-tab-structured'
 import type { StructuredAgentLaunchSettlement } from '@/lib/structured-agent-launch-settlement'
 import { workspaceKindForWorktreeId } from '@/lib/agent-launch-route-input'
 import { planAgentSessionLaunch } from '@/lib/agent-session-launch-plan'
+import { LOCAL_EXECUTION_HOST_ID, toSshExecutionHostId } from '../../../shared/execution-host'
 
 export type LaunchAgentInNewTabArgs = {
   agent: TuiAgent
@@ -131,7 +136,21 @@ function launchAgentInNewTabInternal(
       ? agentArgs
       : resolveTuiAgentLaunchArgs(agent, store.settings?.agentDefaultArgs)
   const agentEnv = resolveTuiAgentLaunchEnv(agent, store.settings?.agentDefaultEnv)
-  const trimmedPrompt = prompt?.trim() ?? ''
+  const userPrompt = prompt?.trim() ?? ''
+  const executionHostId =
+    worktree?.hostId ??
+    (typeof worktreeSshConnectionId === 'string'
+      ? toSshExecutionHostId(worktreeSshConnectionId)
+      : LOCAL_EXECUTION_HOST_ID)
+  const trimmedPrompt =
+    worktree && worktreeSshConnectionId !== undefined
+      ? buildConversationKnowledgeLaunchPrompt({
+          prompt: userPrompt,
+          cwd: worktree.path,
+          executionHostId,
+          items: getConversationKnowledgeLaunchItems()
+        })
+      : userPrompt
   const hasPrompt = trimmedPrompt.length > 0
   const isFollowupPath = TUI_AGENT_CONFIG[agent].promptInjectionMode === 'stdin-after-start'
   // Why: the remote host can't infer this client's draft/default view choice, so decide it here for paired tabs too.
