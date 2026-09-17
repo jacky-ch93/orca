@@ -130,7 +130,32 @@ function isHandoffEntry(value: unknown): boolean {
       record.reliability === 'inferred' ||
       record.reliability === 'proposal') &&
     (evidenceRecord.kind === 'conversation' || evidenceRecord.kind === 'tool-result') &&
-    typeof evidenceRecord.messageId === 'string'
+    typeof evidenceRecord.messageId === 'string' &&
+    (record.lifecycle === undefined || isLifecycle(record.lifecycle)) &&
+    (record.claim === undefined || isClaim(record.claim))
+  )
+}
+
+function isLifecycle(value: unknown): boolean {
+  const record = toRecord(value)
+  return (
+    record !== null &&
+    (record.status === 'active' ||
+      record.status === 'superseded' ||
+      record.status === 'conflicted' ||
+      record.status === 'expired') &&
+    (record.reason === undefined || record.reason === 'automatic-conflict')
+  )
+}
+
+function isClaim(value: unknown): boolean {
+  const record = toRecord(value)
+  return (
+    record !== null &&
+    typeof record.subject === 'string' &&
+    typeof record.relation === 'string' &&
+    typeof record.object === 'string' &&
+    record.cardinality === 'single'
   )
 }
 

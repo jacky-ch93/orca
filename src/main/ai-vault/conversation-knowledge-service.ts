@@ -5,7 +5,6 @@ import {
   type AiVaultSession
 } from '../../shared/ai-vault-types'
 import {
-  isConversationKnowledgeGenerationTitle,
   isConversationKnowledgeItemFresh,
   type ConversationKnowledgeIndexStatus,
   type ConversationKnowledgeItem
@@ -22,11 +21,9 @@ import {
   isKnowledgeGenerationSession
 } from './conversation-knowledge-source-session'
 import { resolveKnowledgeTitle } from './conversation-knowledge-title'
-import {
-  conversationKnowledgeSource,
-  hydrateConversationKnowledgeSourceTimes
-} from './conversation-knowledge-source'
+import { conversationKnowledgeSource } from './conversation-knowledge-source'
 import { cancelLocalGeneration } from '../text-generation/source-control-generation-lanes'
+import { visibleConversationKnowledgeItems } from './conversation-knowledge-visible-items'
 
 // Keep one active process so a model switch can cancel the exact in-flight call.
 const MAX_CONCURRENT_SUMMARIES = 1
@@ -279,15 +276,12 @@ export class ConversationKnowledgeService {
       readSession: this.dependencies.readSession
     })
     await this.dependencies.store.remove([...legacyEmptyIds])
-    const visibleItems = hydrateConversationKnowledgeSourceTimes(
-      items.filter(
-        (item) =>
-          !emptyIds.has(item.id) &&
-          !legacyEmptyIds.has(item.id) &&
-          !isConversationKnowledgeGenerationTitle(item.source.title)
-      ),
-      sourceSessions
-    )
+    const visibleItems = visibleConversationKnowledgeItems({
+      items,
+      sourceSessions,
+      emptyIds,
+      legacyEmptyIds
+    })
     if (!scopePaths?.length) {
       return visibleItems
     }

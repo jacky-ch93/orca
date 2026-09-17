@@ -87,6 +87,33 @@ describe('parseConversationKnowledgeOutput', () => {
     ])
   })
 
+  it('drops a claim key when its subject or value is absent from the user evidence', () => {
+    const entry = {
+      kind: 'decision' as const,
+      text: 'Use Codex for summaries.',
+      reliability: 'user-confirmed' as const,
+      evidence: { kind: 'conversation' as const, messageId: 'user-1' },
+      claim: {
+        subject: 'Orca',
+        relation: 'summary-agent',
+        object: 'Codex',
+        cardinality: 'single' as const
+      }
+    }
+    expect(
+      retainSourceBackedHandoff(
+        [entry],
+        [{ id: 'user-1', role: 'user', text: 'Use Claude for summaries.' }]
+      )[0]?.claim
+    ).toBeUndefined()
+    expect(
+      retainSourceBackedHandoff(
+        [entry],
+        [{ id: 'user-1', role: 'user', text: 'Orca uses Codex for summaries.' }]
+      )[0]?.claim
+    ).toEqual(entry.claim)
+  })
+
   it('samples the beginning, dynamic middle, and ending of long sessions', () => {
     const messages = Array.from({ length: 30 }, (_, index) => ({
       id: `message-${index}`,

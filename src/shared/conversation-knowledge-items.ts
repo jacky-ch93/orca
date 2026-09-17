@@ -1,6 +1,7 @@
 import type { AiVaultAgent } from './ai-vault-types'
 import type { ExecutionHostId } from './execution-host'
 import type { TuiAgent } from './tui-agent'
+import { reconcileConversationKnowledgeConflicts } from './conversation-knowledge-conflicts'
 
 export type ConversationKnowledgeItem = {
   id: string
@@ -40,6 +41,13 @@ export type ConversationKnowledgeHandoffEntry = {
   }
   lifecycle?: {
     status: 'active' | 'superseded' | 'conflicted' | 'expired'
+    reason?: 'automatic-conflict'
+  }
+  claim?: {
+    subject: string
+    relation: string
+    object: string
+    cardinality: 'single'
   }
 }
 
@@ -119,7 +127,7 @@ export function buildConversationKnowledgeContextPack(args: {
   items: readonly ConversationKnowledgeItem[]
   cwd: string
 }): string {
-  const entries = args.items
+  const entries = reconcileConversationKnowledgeConflicts(args.items)
     .filter((item) => item.source.cwd === args.cwd)
     .flatMap((item) =>
       (item.knowledge.handoff ?? [])
