@@ -31,6 +31,8 @@ import type {
 } from '../../../../shared/conversation-knowledge-items'
 import { useTranslation } from 'react-i18next'
 import { ConversationKnowledgeDetail } from './ConversationKnowledgeDetail'
+import { ConversationKnowledgeClaimResults } from './ConversationKnowledgeClaimResults'
+import { searchConversationKnowledgeClaims } from '@/lib/conversation-knowledge-claim-search'
 
 const IDLE_STATUS: ConversationKnowledgeIndexStatus = {
   state: 'idle',
@@ -54,6 +56,7 @@ export default function ConversationKnowledgePanel({
   const [status, setStatus] = useState<ConversationKnowledgeIndexStatus>(IDLE_STATUS)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [highlightEvidenceId, setHighlightEvidenceId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ConversationKnowledgeViewMode>(() =>
     typeof window === 'undefined' ? 'all' : readConversationKnowledgeViewMode(window.localStorage)
   )
@@ -84,6 +87,10 @@ export default function ConversationKnowledgePanel({
     [scopedGraph, searchQuery]
   )
   const scopedItems = useMemo(() => conversationKnowledgeItemsInGraph(scopedGraph), [scopedGraph])
+  const claimMatches = useMemo(
+    () => searchConversationKnowledgeClaims(scopedItems, searchQuery),
+    [scopedItems, searchQuery]
+  )
   const visibleItems = useMemo(
     () => conversationKnowledgeItemsInGraph(visibleGraph),
     [visibleGraph]
@@ -183,6 +190,7 @@ export default function ConversationKnowledgePanel({
   const chooseItem = (item: ConversationKnowledgeItem): void => {
     selectConversationKnowledgeItem(item)
     setSelected(item)
+    setHighlightEvidenceId(null)
   }
 
   const chooseViewMode = (mode: ConversationKnowledgeViewMode): void => {
@@ -266,7 +274,7 @@ export default function ConversationKnowledgePanel({
                 )}
                 placeholder={translate(
                   'conversationKnowledge.search.placeholder',
-                  'Search summaries or nodes'
+                  'Search statements, summaries, or nodes'
                 )}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
@@ -328,29 +336,41 @@ export default function ConversationKnowledgePanel({
         </div>
       ) : (
         <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(240px,1fr)_minmax(0,1fr)] divide-y divide-border @min-[720px]/conversation-knowledge:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] @min-[720px]/conversation-knowledge:grid-rows-[minmax(0,1fr)] @min-[720px]/conversation-knowledge:divide-x @min-[720px]/conversation-knowledge:divide-y-0">
-          <div className="min-h-0 min-w-0 overflow-hidden p-3">
-            <ConversationKnowledgeGraphPreview
-              graph={visibleGraph}
-              selectedItemId={visibleSelected?.id}
-              onSelectItem={chooseItem}
-              viewMode={viewMode}
-              projectId={activeProjectId}
-              emptyMessage={
-                searchQuery.trim()
-                  ? translate(
-                      'conversationKnowledge.empty.search',
-                      'No matching summaries or related nodes.'
-                    )
-                  : translate(
-                      'conversationKnowledge.empty.generated',
-                      'No generated knowledge yet.'
-                    )
-              }
+          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden p-3">
+            <ConversationKnowledgeClaimResults
+              matches={claimMatches}
+              onSelect={(match) => {
+                setSelected(match.item)
+                setHighlightEvidenceId(match.entry.evidence.messageId)
+              }}
             />
+            <div className="min-h-0 flex-1">
+              <ConversationKnowledgeGraphPreview
+                graph={visibleGraph}
+                selectedItemId={visibleSelected?.id}
+                onSelectItem={chooseItem}
+                viewMode={viewMode}
+                projectId={activeProjectId}
+                emptyMessage={
+                  searchQuery.trim()
+                    ? translate(
+                        'conversationKnowledge.empty.search',
+                        'No matching summaries or related nodes.'
+                      )
+                    : translate(
+                        'conversationKnowledge.empty.generated',
+                        'No generated knowledge yet.'
+                      )
+                }
+              />
+            </div>
           </div>
           <ScrollArea className="min-h-0 min-w-0">
             {visibleSelected ? (
-              <ConversationKnowledgeDetail item={visibleSelected} />
+              <ConversationKnowledgeDetail
+                item={visibleSelected}
+                highlightEvidenceId={highlightEvidenceId}
+              />
             ) : (
               <p className="p-4 text-sm text-muted-foreground">
                 {searchQuery.trim()

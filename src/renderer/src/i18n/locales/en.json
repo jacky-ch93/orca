@@ -27,8 +27,9 @@
     },
     "search": {
       "ariaLabel": "Search conversation knowledge",
-      "placeholder": "Search summaries or nodes"
+      "placeholder": "Search statements, summaries, or nodes"
     },
+    "claimResults": "Matching statements",
     "generateAll": "Generate all",
     "regenerateAll": "Regenerate all",
     "stop": "Stop generating",

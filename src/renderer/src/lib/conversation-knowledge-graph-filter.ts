@@ -6,6 +6,10 @@ import {
   conversationKnowledgeSearchText,
   type ConversationKnowledgeItem
 } from '../../../shared/conversation-knowledge-items'
+import {
+  hasStructuredClaimTerms,
+  searchConversationKnowledgeClaims
+} from './conversation-knowledge-claim-search'
 
 export function scopeConversationKnowledgeGraphToProject(
   graph: ConversationKnowledgeGraph,
@@ -47,8 +51,13 @@ export function searchConversationKnowledgeGraph(
   const nodeById = new Map(graph.nodes.map((node) => [node.id, node]))
   const directScores = new Map<string, number>()
   const knowledgeScores = new Map<string, number>()
+  const structuredClaimQuery = hasStructuredClaimTerms(query)
   for (const node of graph.nodes) {
-    const score = scoreNode(node, tokens)
+    const claimScore = node.item
+      ? (searchConversationKnowledgeClaims([node.item], query)[0]?.score ?? null)
+      : null
+    const contentScore = structuredClaimQuery ? null : scoreNode(node, tokens)
+    const score = claimScore === null ? contentScore : Math.max(claimScore, contentScore ?? 0)
     if (score === null) {
       continue
     }

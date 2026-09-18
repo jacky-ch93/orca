@@ -94,4 +94,45 @@ describe('conversation knowledge graph filters', () => {
       'two'
     ])
   })
+
+  it('shows only the summary carrying a matching structured claim', () => {
+    const claimed = item('claimed', 'Choices', 'Agent choices')
+    claimed.knowledge.handoff = [
+      {
+        kind: 'decision',
+        text: 'Orca uses Codex.',
+        reliability: 'user-confirmed',
+        evidence: { kind: 'conversation', messageId: 'user-1' },
+        claim: {
+          subject: 'Orca',
+          relation: 'summary-agent',
+          object: 'Codex',
+          cardinality: 'single'
+        }
+      }
+    ]
+    const result = searchConversationKnowledgeGraph(
+      {
+        nodes: [
+          {
+            id: 'knowledge:claimed',
+            type: 'knowledge',
+            label: 'Choices',
+            itemCount: 1,
+            item: claimed
+          },
+          {
+            id: 'knowledge:other',
+            type: 'knowledge',
+            label: 'Codex',
+            itemCount: 1,
+            item: item('other', 'Codex', 'Unrelated')
+          }
+        ],
+        edges: []
+      },
+      'relation:summary-agent object:Codex'
+    )
+    expect(conversationKnowledgeItemsInGraph(result).map((entry) => entry.id)).toEqual(['claimed'])
+  })
 })

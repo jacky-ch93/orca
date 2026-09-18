@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,9 +9,11 @@ import type { ConversationKnowledgeItem } from '../../../../shared/conversation-
 import { SessionTime } from './ai-vault-session-time'
 
 export function ConversationKnowledgeDetail({
-  item
+  item,
+  highlightEvidenceId
 }: {
   item: ConversationKnowledgeItem
+  highlightEvidenceId?: string | null
 }): React.JSX.Element {
   useTranslation()
 
@@ -67,7 +69,10 @@ export function ConversationKnowledgeDetail({
         values={item.knowledge.entities}
         inline
       />
-      <HandoffList entries={item.knowledge.handoff ?? []} />
+      <HandoffList
+        entries={item.knowledge.handoff ?? []}
+        highlightEvidenceId={highlightEvidenceId}
+      />
       <DetailSection title={translate('conversationKnowledge.detail.source', 'Source')}>
         <p className="text-xs text-muted-foreground">
           {item.source.agent} · {item.source.sessionId}
@@ -84,10 +89,16 @@ export function ConversationKnowledgeDetail({
 }
 
 function HandoffList({
-  entries
+  entries,
+  highlightEvidenceId
 }: {
   entries: NonNullable<ConversationKnowledgeItem['knowledge']['handoff']>
+  highlightEvidenceId?: string | null
 }): React.JSX.Element | null {
+  const highlightedEntry = useRef<HTMLLIElement | null>(null)
+  useEffect(() => {
+    highlightedEntry.current?.scrollIntoView({ block: 'nearest' })
+  }, [highlightEvidenceId])
   if (!entries.length) {
     return null
   }
@@ -101,7 +112,8 @@ function HandoffList({
           return (
             <li
               key={`${entry.evidence.messageId}:${entry.text}`}
-              className="rounded-md border border-border p-2"
+              ref={highlightEvidenceId === entry.evidence.messageId ? highlightedEntry : null}
+              className={`rounded-md border p-2 ${highlightEvidenceId === entry.evidence.messageId ? 'border-ring' : 'border-border'}`}
             >
               <div className="flex flex-wrap items-center gap-1.5">
                 <Badge variant={included ? 'outline' : 'secondary'}>

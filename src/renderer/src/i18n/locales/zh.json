@@ -19,8 +19,9 @@
     },
     "search": {
       "ariaLabel": "搜索会话知识",
-      "placeholder": "搜索总结或节点"
+      "placeholder": "搜索陈述、总结或节点"
     },
+    "claimResults": "匹配的陈述",
     "generateAll": "生成全部",
     "regenerateAll": "重新生成全部",
     "stop": "停止生成",
@@ -44,7 +45,15 @@
       "topics": "主题",
       "entities": "实体",
       "source": "来源",
-      "openSessionHistory": "打开智能体会话历史"
+      "openSessionHistory": "打开智能体会话历史",
+      "handoffUserConfirmed": "用户确认",
+      "handoffVerified": "已验证",
+      "handoffInferred": "推断",
+      "handoffProposal": "提议",
+      "handoffActive": "有效",
+      "handoffSuperseded": "已取代",
+      "handoffConflicted": "有冲突",
+      "handoffExpired": "已过期"
     },
     "nodeType": {
       "project": "项目",

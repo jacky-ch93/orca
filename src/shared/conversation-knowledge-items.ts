@@ -117,7 +117,13 @@ export function conversationKnowledgeSearchText(item: ConversationKnowledgeItem)
     ...item.knowledge.topics,
     ...item.knowledge.conclusions,
     ...item.knowledge.entities,
-    ...(item.knowledge.searchTerms ?? [])
+    ...(item.knowledge.searchTerms ?? []),
+    ...(item.knowledge.handoff ?? []).flatMap((entry) => [
+      entry.text,
+      entry.claim?.subject ?? '',
+      entry.claim?.relation ?? '',
+      entry.claim?.object ?? ''
+    ])
   ]
     .join('\n')
     .toLocaleLowerCase()
