@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { RefreshCw, Search, Square, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -32,7 +32,17 @@ import type {
 import { useTranslation } from 'react-i18next'
 import { ConversationKnowledgeDetail } from './ConversationKnowledgeDetail'
 import { ConversationKnowledgeClaimResults } from './ConversationKnowledgeClaimResults'
-import { searchConversationKnowledgeClaims } from '@/lib/conversation-knowledge-claim-search'
+import { ConversationKnowledgeRelationGraph } from './ConversationKnowledgeRelationGraph'
+import { ConversationKnowledgeIndexButton } from './ConversationKnowledgeIndexButton'
+import {
+  ConversationKnowledgeGraphModeSwitch,
+  type ConversationKnowledgeGraphMode
+} from './ConversationKnowledgeGraphModeSwitch'
+import {
+  searchConversationKnowledgeClaims,
+  type ConversationKnowledgeClaimMatch
+} from '@/lib/conversation-knowledge-claim-search'
+import { buildConversationKnowledgeRelations } from '@/lib/conversation-knowledge-relations'
 
 const IDLE_STATUS: ConversationKnowledgeIndexStatus = {
   state: 'idle',
@@ -56,6 +66,7 @@ export default function ConversationKnowledgePanel({
   const [status, setStatus] = useState<ConversationKnowledgeIndexStatus>(IDLE_STATUS)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [graphMode, setGraphMode] = useState<ConversationKnowledgeGraphMode>('topics')
   const [highlightEvidenceId, setHighlightEvidenceId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ConversationKnowledgeViewMode>(() =>
     typeof window === 'undefined' ? 'all' : readConversationKnowledgeViewMode(window.localStorage)
@@ -89,6 +100,10 @@ export default function ConversationKnowledgePanel({
   const scopedItems = useMemo(() => conversationKnowledgeItemsInGraph(scopedGraph), [scopedGraph])
   const claimMatches = useMemo(
     () => searchConversationKnowledgeClaims(scopedItems, searchQuery),
+    [scopedItems, searchQuery]
+  )
+  const relations = useMemo(
+    () => buildConversationKnowledgeRelations(scopedItems, searchQuery),
     [scopedItems, searchQuery]
   )
   const visibleItems = useMemo(
@@ -193,6 +208,11 @@ export default function ConversationKnowledgePanel({
     setHighlightEvidenceId(null)
   }
 
+  const chooseClaim = (match: ConversationKnowledgeClaimMatch): void => {
+    setSelected(match.item)
+    setHighlightEvidenceId(match.entry.evidence.messageId)
+  }
+
   const chooseViewMode = (mode: ConversationKnowledgeViewMode): void => {
     setViewMode(mode)
     writeConversationKnowledgeViewMode(window.localStorage, mode)
@@ -238,6 +258,7 @@ export default function ConversationKnowledgePanel({
               : translate('conversationKnowledge.items.empty', 'No knowledge items')}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            <ConversationKnowledgeGraphModeSwitch value={graphMode} onChange={setGraphMode} />
             <ToggleGroup
               type="single"
               spacing={1}
@@ -282,30 +303,14 @@ export default function ConversationKnowledgePanel({
           </div>
         </div>
         <div className="flex gap-1">
-          <Button
-            size="sm"
-            variant="outline"
+          <ConversationKnowledgeIndexButton
+            running={status.state === 'running'}
+            regenerateAll={regenerateAll}
             disabled={!generatorAgent || !generatorModel}
             onClick={() =>
               void (status.state === 'running' ? stopIndex() : startIndex(regenerateAll))
             }
-            title={translate(
-              regenerateAll
-                ? 'conversationKnowledge.regenerateAll'
-                : 'conversationKnowledge.generateAll',
-              regenerateAll ? 'Regenerate all' : 'Generate all'
-            )}
-          >
-            {status.state === 'running' ? <Square /> : <RefreshCw />}
-            {status.state === 'running'
-              ? translate('conversationKnowledge.stop', 'Stop generating')
-              : translate(
-                  regenerateAll
-                    ? 'conversationKnowledge.regenerateAll'
-                    : 'conversationKnowledge.generateAll',
-                  regenerateAll ? 'Regenerate all' : 'Generate all'
-                )}
-          </Button>
+          />
           {onClose ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -337,32 +342,32 @@ export default function ConversationKnowledgePanel({
       ) : (
         <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(240px,1fr)_minmax(0,1fr)] divide-y divide-border @min-[720px]/conversation-knowledge:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] @min-[720px]/conversation-knowledge:grid-rows-[minmax(0,1fr)] @min-[720px]/conversation-knowledge:divide-x @min-[720px]/conversation-knowledge:divide-y-0">
           <div className="flex min-h-0 min-w-0 flex-col overflow-hidden p-3">
-            <ConversationKnowledgeClaimResults
-              matches={claimMatches}
-              onSelect={(match) => {
-                setSelected(match.item)
-                setHighlightEvidenceId(match.entry.evidence.messageId)
-              }}
-            />
+            {graphMode === 'topics' ? (
+              <ConversationKnowledgeClaimResults matches={claimMatches} onSelect={chooseClaim} />
+            ) : null}
             <div className="min-h-0 flex-1">
-              <ConversationKnowledgeGraphPreview
-                graph={visibleGraph}
-                selectedItemId={visibleSelected?.id}
-                onSelectItem={chooseItem}
-                viewMode={viewMode}
-                projectId={activeProjectId}
-                emptyMessage={
-                  searchQuery.trim()
-                    ? translate(
-                        'conversationKnowledge.empty.search',
-                        'No matching summaries or related nodes.'
-                      )
-                    : translate(
-                        'conversationKnowledge.empty.generated',
-                        'No generated knowledge yet.'
-                      )
-                }
-              />
+              {graphMode === 'relations' ? (
+                <ConversationKnowledgeRelationGraph relations={relations} onSelect={chooseClaim} />
+              ) : (
+                <ConversationKnowledgeGraphPreview
+                  graph={visibleGraph}
+                  selectedItemId={visibleSelected?.id}
+                  onSelectItem={chooseItem}
+                  viewMode={viewMode}
+                  projectId={activeProjectId}
+                  emptyMessage={
+                    searchQuery.trim()
+                      ? translate(
+                          'conversationKnowledge.empty.search',
+                          'No matching summaries or related nodes.'
+                        )
+                      : translate(
+                          'conversationKnowledge.empty.generated',
+                          'No generated knowledge yet.'
+                        )
+                  }
+                />
+              )}
             </div>
           </div>
           <ScrollArea className="min-h-0 min-w-0">

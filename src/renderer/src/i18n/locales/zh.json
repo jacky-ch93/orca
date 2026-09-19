@@ -22,6 +22,16 @@
       "placeholder": "搜索陈述、总结或节点"
     },
     "claimResults": "匹配的陈述",
+    "graphMode": {
+      "ariaLabel": "图谱视图",
+      "topics": "主题",
+      "relations": "关系"
+    },
+    "relations": {
+      "title": "有来源的语义关系",
+      "empty": "暂无有来源的语义关系。重新生成知识以提取关系。",
+      "clearFocus": "显示全部"
+    },
     "generateAll": "生成全部",
     "regenerateAll": "重新生成全部",
     "stop": "停止生成",

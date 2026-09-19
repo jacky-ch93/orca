@@ -30,6 +30,16 @@
       "placeholder": "Search statements, summaries, or nodes"
     },
     "claimResults": "Matching statements",
+    "graphMode": {
+      "ariaLabel": "Graph view",
+      "topics": "Topics",
+      "relations": "Relations"
+    },
+    "relations": {
+      "title": "Source-backed relationships",
+      "empty": "No source-backed relationships yet. Regenerate knowledge to extract them.",
+      "clearFocus": "Show all"
+    },
     "generateAll": "Generate all",
     "regenerateAll": "Regenerate all",
     "stop": "Stop generating",

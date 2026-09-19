@@ -42,7 +42,7 @@ export function ConversationKnowledgeClaimResults({
                     <Badge variant={lifecycle?.status === 'conflicted' ? 'secondary' : 'outline'}>
                       {claimStatusLabel(lifecycle?.status)}
                     </Badge>
-                    <span>{reliabilityLabel(match.entry.reliability)}</span>
+                    <span>{claimReliabilityLabel(match.entry.reliability)}</span>
                     <span>
                       {match.item.source.agent} · {match.item.source.sessionId} ·{' '}
                       {evidence.messageId}
@@ -58,7 +58,9 @@ export function ConversationKnowledgeClaimResults({
   )
 }
 
-function reliabilityLabel(reliability: ConversationKnowledgeHandoffEntry['reliability']): string {
+export function claimReliabilityLabel(
+  reliability: ConversationKnowledgeHandoffEntry['reliability']
+): string {
   switch (reliability) {
     case 'user-confirmed':
       return translate('conversationKnowledge.detail.handoffUserConfirmed', 'User confirmed')
@@ -71,7 +73,7 @@ function reliabilityLabel(reliability: ConversationKnowledgeHandoffEntry['reliab
   }
 }
 
-function claimStatusLabel(status: string | undefined): string {
+export function claimStatusLabel(status: string | undefined): string {
   switch (status) {
     case 'conflicted':
       return translate('conversationKnowledge.detail.handoffConflicted', 'Conflicted')
