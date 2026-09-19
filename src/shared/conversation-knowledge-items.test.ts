@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CONVERSATION_KNOWLEDGE_FORMAT_VERSION,
   isConversationKnowledgeItemFresh,
   searchConversationKnowledgeItems,
   type ConversationKnowledgeItem
@@ -25,7 +26,8 @@ const baseItem: ConversationKnowledgeItem = {
   generator: {
     agent: 'codex',
     model: 'gpt-5',
-    generatedAt: '2026-09-01T10:01:00.000Z'
+    generatedAt: '2026-09-01T10:01:00.000Z',
+    formatVersion: CONVERSATION_KNOWLEDGE_FORMAT_VERSION
   }
 }
 
@@ -49,6 +51,20 @@ describe('conversation knowledge items', () => {
     expect(
       isConversationKnowledgeItemFresh(baseItem, {
         sourceUpdatedAt: '2026-09-02T10:00:00.000Z',
+        generatorAgent: 'codex',
+        generatorModel: 'gpt-5'
+      })
+    ).toBe(false)
+  })
+
+  it('invalidates legacy items when the enrichment format changes', () => {
+    const legacy = {
+      ...baseItem,
+      generator: { ...baseItem.generator, formatVersion: undefined }
+    }
+    expect(
+      isConversationKnowledgeItemFresh(legacy, {
+        sourceUpdatedAt: legacy.source.updatedAt,
         generatorAgent: 'codex',
         generatorModel: 'gpt-5'
       })

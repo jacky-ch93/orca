@@ -102,7 +102,8 @@ function isKnowledgeItem(value: unknown): value is ConversationKnowledgeItem {
     (item.knowledge.handoff === undefined || item.knowledge.handoff.every(isHandoffEntry)) &&
     typeof item.generator?.agent === 'string' &&
     typeof item.generator.model === 'string' &&
-    typeof item.generator.generatedAt === 'string'
+    typeof item.generator.generatedAt === 'string' &&
+    (item.generator.formatVersion === undefined || typeof item.generator.formatVersion === 'number')
   )
 }
 

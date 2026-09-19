@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ConversationKnowledgeService } from './conversation-knowledge-service'
 import type { AiVaultSession } from '../../shared/ai-vault-types'
+import {
+  CONVERSATION_KNOWLEDGE_FORMAT_VERSION,
+  type ConversationKnowledgeItem
+} from '../../shared/conversation-knowledge-items'
 
 describe('ConversationKnowledgeService', () => {
   it('keeps the source agent separate from the configured generator agent', async () => {
@@ -86,6 +90,36 @@ describe('ConversationKnowledgeService', () => {
       completed: 0,
       failed: 1
     })
+  })
+
+  it('reindexes a legacy item whose enrichment format is stale', async () => {
+    const existing = knowledgeItem('one')
+    delete existing.generator.formatVersion
+    const enrich = vi.fn().mockResolvedValue({
+      summary: 'Updated',
+      topics: [],
+      conclusions: [],
+      entities: [],
+      searchTerms: [],
+      handoff: [],
+      agent: 'codex',
+      model: 'gpt-5'
+    })
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([session('one')]),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
+      enrich,
+      store: {
+        list: vi.fn().mockResolvedValue([existing]),
+        upsert: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined)
+      }
+    })
+
+    await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
+    await vi.waitFor(() => expect(service.getIndexStatus().state).toBe('idle'))
+
+    expect(enrich).toHaveBeenCalledOnce()
   })
 
   it('does not index the internal sessions created by knowledge generation', async () => {
@@ -262,7 +296,7 @@ function readableHistory() {
   }
 }
 
-function knowledgeItem(sessionId: string) {
+function knowledgeItem(sessionId: string): ConversationKnowledgeItem {
   return {
     id: `local:claude:${sessionId}`,
     source: {
@@ -277,7 +311,8 @@ function knowledgeItem(sessionId: string) {
     generator: {
       agent: 'codex' as const,
       model: 'gpt-5',
-      generatedAt: '2026-09-01T10:01:00.000Z'
+      generatedAt: '2026-09-01T10:01:00.000Z',
+      formatVersion: CONVERSATION_KNOWLEDGE_FORMAT_VERSION
     }
   }
 }

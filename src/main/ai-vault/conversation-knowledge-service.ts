@@ -5,6 +5,7 @@ import {
   type AiVaultSession
 } from '../../shared/ai-vault-types'
 import {
+  CONVERSATION_KNOWLEDGE_FORMAT_VERSION,
   isConversationKnowledgeItemFresh,
   type ConversationKnowledgeIndexStatus,
   type ConversationKnowledgeItem
@@ -255,7 +256,8 @@ export class ConversationKnowledgeService {
       generator: {
         agent: args.generatorAgent,
         model: enrichment.model,
-        generatedAt: new Date().toISOString()
+        generatedAt: new Date().toISOString(),
+        formatVersion: CONVERSATION_KNOWLEDGE_FORMAT_VERSION
       }
     }
     await this.dependencies.store.upsert(item)

@@ -3,6 +3,8 @@ import type { ExecutionHostId } from './execution-host'
 import type { TuiAgent } from './tui-agent'
 import { reconcileConversationKnowledgeConflicts } from './conversation-knowledge-conflicts'
 
+export const CONVERSATION_KNOWLEDGE_FORMAT_VERSION = 1
+
 export type ConversationKnowledgeItem = {
   id: string
   source: {
@@ -28,6 +30,7 @@ export type ConversationKnowledgeItem = {
     agent: TuiAgent
     model: string
     generatedAt: string
+    formatVersion?: number
   }
 }
 
@@ -106,7 +109,8 @@ export function isConversationKnowledgeItemFresh(
   return (
     item.source.updatedAt === expected.sourceUpdatedAt &&
     item.generator.agent === expected.generatorAgent &&
-    item.generator.model === expected.generatorModel
+    item.generator.model === expected.generatorModel &&
+    item.generator.formatVersion === CONVERSATION_KNOWLEDGE_FORMAT_VERSION
   )
 }
 
