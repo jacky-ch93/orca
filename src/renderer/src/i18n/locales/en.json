@@ -41,7 +41,10 @@
       "clearFocus": "Show all"
     },
     "generateAll": "Generate all",
+    "generateUpdates": "Generate updates",
     "regenerateAll": "Regenerate all",
+    "regenerateAllDescription": "Replace every generated knowledge item.",
+    "generationOptions": "More generation options",
     "stop": "Stop generating",
     "configurationRequired": "Choose an enabled summary agent and model in Settings → Experimental → Conversation Knowledge.",
     "empty": {

@@ -33,7 +33,10 @@
       "clearFocus": "显示全部"
     },
     "generateAll": "生成全部",
+    "generateUpdates": "生成更新",
     "regenerateAll": "重新生成全部",
+    "regenerateAllDescription": "替换全部已生成的知识项。",
+    "generationOptions": "更多生成选项",
     "stop": "停止生成",
     "configurationRequired": "请在设置 → 实验性 → 会话知识中选择已启用的摘要智能体和模型。",
     "empty": {

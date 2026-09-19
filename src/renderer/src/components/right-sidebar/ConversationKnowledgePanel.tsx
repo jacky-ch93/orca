@@ -81,7 +81,6 @@ export default function ConversationKnowledgePanel({
   )
   const scopePaths = undefined
   const summaryLanguage = typeof navigator === 'undefined' ? 'en' : navigator.language
-  const regenerateAll = status.state === 'idle' && status.total > 0 && status.failed === 0
   const fullGraph = useMemo(
     () => buildConversationKnowledgeGraph({ repos, worktrees, items }),
     [items, repos, worktrees]
@@ -305,11 +304,10 @@ export default function ConversationKnowledgePanel({
         <div className="flex gap-1">
           <ConversationKnowledgeIndexButton
             running={status.state === 'running'}
-            regenerateAll={regenerateAll}
             disabled={!generatorAgent || !generatorModel}
-            onClick={() =>
-              void (status.state === 'running' ? stopIndex() : startIndex(regenerateAll))
-            }
+            onGenerateUpdates={() => void startIndex(false)}
+            onRegenerateAll={() => void startIndex(true)}
+            onStop={() => void stopIndex()}
           />
           {onClose ? (
             <Tooltip>

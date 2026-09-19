@@ -1,26 +1,71 @@
-import { RefreshCw, Square } from 'lucide-react'
+import { ChevronDown, RefreshCw, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
 
 export function ConversationKnowledgeIndexButton({
   running,
-  regenerateAll,
   disabled,
-  onClick
+  onGenerateUpdates,
+  onRegenerateAll,
+  onStop
 }: {
   running: boolean
-  regenerateAll: boolean
   disabled: boolean
-  onClick: () => void
+  onGenerateUpdates: () => void
+  onRegenerateAll: () => void
+  onStop: () => void
 }): React.JSX.Element {
-  const key = regenerateAll
-    ? 'conversationKnowledge.regenerateAll'
-    : 'conversationKnowledge.generateAll'
-  const label = translate(key, regenerateAll ? 'Regenerate all' : 'Generate all')
   return (
-    <Button size="sm" variant="outline" disabled={disabled} onClick={onClick} title={label}>
-      {running ? <Square /> : <RefreshCw />}
-      {running ? translate('conversationKnowledge.stop', 'Stop generating') : label}
-    </Button>
+    <ButtonGroup>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={disabled}
+        onClick={running ? onStop : onGenerateUpdates}
+      >
+        {running ? <Square /> : <RefreshCw />}
+        {running
+          ? translate('conversationKnowledge.stop', 'Stop generating')
+          : translate('conversationKnowledge.generateUpdates', 'Generate updates')}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon-sm"
+            variant="outline"
+            disabled={disabled || running}
+            aria-label={translate(
+              'conversationKnowledge.generationOptions',
+              'More generation options'
+            )}
+          >
+            <ChevronDown className="size-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={onRegenerateAll} className="items-start">
+            <RefreshCw className="mt-0.5" />
+            <span>
+              <span className="block">
+                {translate('conversationKnowledge.regenerateAll', 'Regenerate all')}
+              </span>
+              <span className="block text-[11px] text-muted-foreground">
+                {translate(
+                  'conversationKnowledge.regenerateAllDescription',
+                  'Replace every generated knowledge item.'
+                )}
+              </span>
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </ButtonGroup>
   )
 }
