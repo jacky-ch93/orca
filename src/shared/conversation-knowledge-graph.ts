@@ -4,14 +4,25 @@ import type { Worktree } from './worktree/types'
 
 export type ConversationKnowledgeGraphNode = {
   id: string
-  type: 'topic' | 'entity' | 'project' | 'worktree' | 'knowledge'
+  type: 'project' | 'workspace' | 'digest' | 'concept' | 'statement'
   label: string
   itemCount: number
   relevance?: number
   item?: ConversationKnowledgeItem
 }
 
-export type ConversationKnowledgeGraphEdge = { source: string; target: string }
+export type ConversationKnowledgeGraphRelation =
+  | 'belongs-to'
+  | 'occurred-in'
+  | 'about'
+  | 'mentions'
+  | 'contains'
+
+export type ConversationKnowledgeGraphEdge = {
+  source: string
+  target: string
+  relation: ConversationKnowledgeGraphRelation
+}
 
 export type ConversationKnowledgeGraph = {
   nodes: ConversationKnowledgeGraphNode[]
@@ -29,22 +40,25 @@ export function buildConversationKnowledgeGraph({
 }): ConversationKnowledgeGraph {
   const nodes = new Map<string, ConversationKnowledgeGraphNode>()
   const edges = new Map<string, ConversationKnowledgeGraphEdge>()
+  const countedNodeItems = new Set<string>()
 
   for (const item of items) {
-    const knowledgeId = `knowledge:${item.id}`
-    nodes.set(knowledgeId, {
-      id: knowledgeId,
-      type: 'knowledge',
+    const digestId = `digest:${item.id}`
+    nodes.set(digestId, {
+      id: digestId,
+      type: 'digest',
       label: item.knowledge.title ?? item.source.title,
       itemCount: 1,
       item
     })
     for (const topic of item.knowledge.topics) {
-      connectLabeledNode(nodes, edges, 'topic', topic, knowledgeId)
+      connectConceptNode(nodes, edges, countedNodeItems, topic, digestId, 'about')
     }
     for (const entity of item.knowledge.entities) {
-      connectLabeledNode(nodes, edges, 'entity', entity, knowledgeId)
+      connectConceptNode(nodes, edges, countedNodeItems, entity, digestId, 'mentions')
     }
+    connectStatementNodes(nodes, edges, item, digestId)
+
     const worktree = longestPathMatch(item.source.cwd, worktrees)
     const repo = worktree
       ? repos.find((candidate) => candidate.id === worktree.repoId)
@@ -52,31 +66,66 @@ export function buildConversationKnowledgeGraph({
     if (repo) {
       const projectId = `project:${repo.id}`
       incrementNode(nodes, projectId, 'project', repo.displayName)
-      addEdge(edges, projectId, knowledgeId)
+      addEdge(edges, digestId, projectId, 'belongs-to')
     }
     if (worktree) {
-      const worktreeId = `worktree:${worktree.id}`
-      incrementNode(nodes, worktreeId, 'worktree', worktree.branch.replace(/^refs\/heads\//, ''))
-      addEdge(edges, worktreeId, knowledgeId)
+      const workspaceId = `workspace:${worktree.id}`
+      incrementNode(nodes, workspaceId, 'workspace', worktree.branch.replace(/^refs\/heads\//, ''))
+      addEdge(edges, digestId, workspaceId, 'occurred-in')
     }
   }
   return { nodes: [...nodes.values()], edges: [...edges.values()] }
 }
 
-function connectLabeledNode(
+function connectConceptNode(
   nodes: Map<string, ConversationKnowledgeGraphNode>,
   edges: Map<string, ConversationKnowledgeGraphEdge>,
-  type: 'topic' | 'entity',
+  countedNodeItems: Set<string>,
   label: string,
-  knowledgeId: string
+  digestId: string,
+  relation: 'about' | 'mentions'
 ): void {
-  const normalized = label.trim()
+  const normalized = normalizeKnowledgeLabel(label)
   if (!normalized) {
     return
   }
-  const id = `${type}:${normalized.toLocaleLowerCase()}`
-  incrementNode(nodes, id, type, normalized)
-  addEdge(edges, id, knowledgeId)
+  const id = `concept:${normalized.toLocaleLowerCase()}`
+  const countKey = `${id}\0${digestId}`
+  if (!countedNodeItems.has(countKey)) {
+    incrementNode(nodes, id, 'concept', normalized)
+    countedNodeItems.add(countKey)
+  }
+  addEdge(edges, digestId, id, relation)
+}
+
+function connectStatementNodes(
+  nodes: Map<string, ConversationKnowledgeGraphNode>,
+  edges: Map<string, ConversationKnowledgeGraphEdge>,
+  item: ConversationKnowledgeItem,
+  digestId: string
+): void {
+  const seen = new Set<string>()
+  for (const [index, conclusion] of item.knowledge.conclusions.entries()) {
+    const label = normalizeKnowledgeLabel(conclusion)
+    const normalized = label.toLocaleLowerCase()
+    if (!label || seen.has(normalized)) {
+      continue
+    }
+    seen.add(normalized)
+    const statementId = `statement:${item.id}:${index}`
+    nodes.set(statementId, {
+      id: statementId,
+      type: 'statement',
+      label,
+      itemCount: 1,
+      item
+    })
+    addEdge(edges, digestId, statementId, 'contains')
+  }
+}
+
+function normalizeKnowledgeLabel(label: string): string {
+  return label.normalize('NFKC').replace(/\s+/g, ' ').trim()
 }
 
 function incrementNode(
@@ -96,9 +145,16 @@ function incrementNode(
 function addEdge(
   edges: Map<string, ConversationKnowledgeGraphEdge>,
   source: string,
-  target: string
+  target: string,
+  relation: ConversationKnowledgeGraphRelation
 ): void {
-  edges.set(`${source}:${target}`, { source, target })
+  if (relation === 'mentions' && edges.has(`${source}\0about\0${target}`)) {
+    return
+  }
+  if (relation === 'about') {
+    edges.delete(`${source}\0mentions\0${target}`)
+  }
+  edges.set(`${source}\0${relation}\0${target}`, { source, target, relation })
 }
 
 function longestPathMatch<T extends { path: string }>(

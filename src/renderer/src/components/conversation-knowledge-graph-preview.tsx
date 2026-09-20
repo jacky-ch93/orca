@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { translate } from '@/i18n/i18n'
 import type {
   ConversationKnowledgeGraph,
+  ConversationKnowledgeGraphRelation,
   ConversationKnowledgeGraphNode
 } from '../../../shared/conversation-knowledge-graph'
 import type { ConversationKnowledgeItem } from '../../../shared/conversation-knowledge-items'
@@ -85,27 +86,56 @@ export function ConversationKnowledgeGraphPreview({
     >
       <div className="relative" style={{ height, width: canvasWidth }}>
         <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden="true">
+          <defs>
+            <marker
+              id="conversation-knowledge-arrow"
+              markerHeight="6"
+              markerWidth="6"
+              orient="auto-start-reverse"
+              refX="5"
+              refY="3"
+              viewBox="0 0 6 6"
+            >
+              <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--border)" />
+            </marker>
+          </defs>
           {visibleGraph.edges.map((edge) => {
             const source = positionById.get(edge.source)
             const target = positionById.get(edge.target)
             if (!source || !target) {
               return null
             }
-            const startX = source.x + NODE_WIDTH
+            const leftToRight = source.x <= target.x
+            const startX = leftToRight ? source.x + NODE_WIDTH : source.x
             const startY = source.y + NODE_HEIGHT / 2
-            const endX = target.x
+            const endX = leftToRight ? target.x : target.x + NODE_WIDTH
             const endY = target.y + NODE_HEIGHT / 2
             const bend = Math.max(32, Math.abs(endX - startX) * 0.42)
+            const direction = leftToRight ? 1 : -1
             return (
-              <path
-                key={`${edge.source}:${edge.target}`}
-                d={`M ${startX} ${startY} C ${startX + bend} ${startY}, ${endX - bend} ${endY}, ${endX} ${endY}`}
-                fill="none"
-                opacity="0.6"
-                stroke="var(--border)"
-                strokeLinecap="round"
-                strokeWidth="1.5"
-              />
+              <g key={`${edge.source}:${edge.relation}:${edge.target}`}>
+                <path
+                  d={`M ${startX} ${startY} C ${startX + bend * direction} ${startY}, ${endX - bend * direction} ${endY}, ${endX} ${endY}`}
+                  fill="none"
+                  markerEnd="url(#conversation-knowledge-arrow)"
+                  opacity="0.6"
+                  stroke="var(--border)"
+                  strokeLinecap="round"
+                  strokeWidth="1.5"
+                />
+                <text
+                  x={(startX + endX) / 2}
+                  y={(startY + endY) / 2 - 4}
+                  fill="var(--muted-foreground)"
+                  fontSize="11"
+                  paintOrder="stroke"
+                  stroke="var(--background)"
+                  strokeWidth="4"
+                  textAnchor="middle"
+                >
+                  {conversationKnowledgeEdgeLabel(edge.relation)}
+                </text>
+              </g>
             )
           })}
         </svg>
@@ -149,14 +179,29 @@ function conversationKnowledgeNodeTypeLabel(type: ConversationKnowledgeGraphNode
   switch (type) {
     case 'project':
       return translate('conversationKnowledge.nodeType.project', 'Project')
-    case 'worktree':
-      return translate('conversationKnowledge.nodeType.worktree', 'Worktree')
-    case 'topic':
-      return translate('conversationKnowledge.nodeType.topic', 'Topic')
-    case 'entity':
-      return translate('conversationKnowledge.nodeType.entity', 'Entity')
-    case 'knowledge':
-      return translate('conversationKnowledge.nodeType.knowledge', 'Summary')
+    case 'workspace':
+      return translate('conversationKnowledge.nodeType.workspace', 'Workspace')
+    case 'digest':
+      return translate('conversationKnowledge.nodeType.digest', 'Conversation digest')
+    case 'concept':
+      return translate('conversationKnowledge.nodeType.concept', 'Concept')
+    case 'statement':
+      return translate('conversationKnowledge.nodeType.statement', 'Knowledge candidate')
+  }
+}
+
+function conversationKnowledgeEdgeLabel(relation: ConversationKnowledgeGraphRelation): string {
+  switch (relation) {
+    case 'belongs-to':
+      return translate('conversationKnowledge.relation.belongsTo', 'belongs to')
+    case 'occurred-in':
+      return translate('conversationKnowledge.relation.occurredIn', 'occurred in')
+    case 'about':
+      return translate('conversationKnowledge.relation.about', 'about')
+    case 'mentions':
+      return translate('conversationKnowledge.relation.mentions', 'mentions')
+    case 'contains':
+      return translate('conversationKnowledge.relation.contains', 'contains')
   }
 }
 
@@ -219,12 +264,12 @@ function conversationKnowledgeGraphColumnPositions(
     GRAPH_SIDE_PADDING + NODE_WIDTH * 2 + 32,
     canvasWidth - GRAPH_SIDE_PADDING - NODE_WIDTH
   )
-  const related = Math.round((GRAPH_SIDE_PADDING + knowledge) / 2)
+  const digest = Math.round((GRAPH_SIDE_PADDING + knowledge) / 2)
   return {
     project: GRAPH_SIDE_PADDING,
-    topic: GRAPH_SIDE_PADDING,
-    worktree: related,
-    entity: related,
-    knowledge
+    workspace: GRAPH_SIDE_PADDING,
+    digest,
+    concept: knowledge,
+    statement: knowledge
   }
 }

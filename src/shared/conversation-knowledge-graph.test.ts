@@ -5,7 +5,7 @@ import type { Repo } from './repo-types'
 import type { Worktree } from './worktree/types'
 
 describe('buildConversationKnowledgeGraph', () => {
-  it('builds semantic topic and project relationships from generated knowledge', () => {
+  it('builds semantic concept, statement, and context relationships from digests', () => {
     const repos = [{ id: 'repo', path: '/code/orca', displayName: 'orca' }] as Repo[]
     const worktrees = [
       { id: 'feature', repoId: 'repo', path: '/code/orca/feature', branch: 'feature' }
@@ -14,14 +14,41 @@ describe('buildConversationKnowledgeGraph', () => {
       knowledgeItem('one', ['SSH', 'process lifecycle']),
       knowledgeItem('two', ['SSH'])
     ]
+    items[0].knowledge.entities = ['SSH', 'Codex']
+    items[0].knowledge.conclusions = ['Agent status is owned by the execution host.']
 
     const graph = buildConversationKnowledgeGraph({ repos, worktrees, items })
 
     expect(graph.nodes).toContainEqual(
-      expect.objectContaining({ id: 'topic:ssh', type: 'topic', label: 'SSH', itemCount: 2 })
+      expect.objectContaining({ id: 'concept:ssh', type: 'concept', label: 'SSH', itemCount: 2 })
     )
-    expect(graph.edges).toContainEqual({ source: 'topic:ssh', target: 'knowledge:one' })
-    expect(graph.edges).toContainEqual({ source: 'worktree:feature', target: 'knowledge:one' })
+    expect(graph.nodes).toContainEqual(
+      expect.objectContaining({
+        id: 'statement:one:0',
+        type: 'statement',
+        label: 'Agent status is owned by the execution host.'
+      })
+    )
+    expect(graph.edges).toContainEqual({
+      source: 'digest:one',
+      target: 'concept:ssh',
+      relation: 'about'
+    })
+    expect(graph.edges).not.toContainEqual({
+      source: 'digest:one',
+      target: 'concept:ssh',
+      relation: 'mentions'
+    })
+    expect(graph.edges).toContainEqual({
+      source: 'digest:one',
+      target: 'statement:one:0',
+      relation: 'contains'
+    })
+    expect(graph.edges).toContainEqual({
+      source: 'digest:one',
+      target: 'workspace:feature',
+      relation: 'occurred-in'
+    })
     expect(graph.nodes.map((node) => node.type)).not.toContain('conversation')
   })
 })

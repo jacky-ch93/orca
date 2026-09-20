@@ -2,7 +2,7 @@
   "conversationKnowledge": {
     "name": "会话知识",
     "graph": "会话知识图谱",
-    "description": "从智能体历史中生成主题、结论和关联关系。",
+    "description": "从智能体历史中生成会话摘要、概念和知识候选。",
     "status": {
       "indexing": "正在生成",
       "indexed": "已生成",
@@ -21,7 +21,7 @@
     },
     "items": {
       "count": "显示 {{visible}} 项，共 {{total}} 项",
-      "empty": "暂无知识项"
+      "empty": "暂无会话摘要"
     },
     "scope": {
       "ariaLabel": "知识图谱展示范围",
@@ -30,13 +30,13 @@
     },
     "search": {
       "ariaLabel": "搜索会话知识",
-      "placeholder": "搜索陈述、总结或节点"
+      "placeholder": "搜索陈述、会话摘要或节点"
     },
     "claimResults": "匹配的陈述",
     "graphMode": {
       "ariaLabel": "图谱视图",
-      "topics": "主题",
-      "relations": "关系"
+      "topics": "图谱",
+      "relations": "有来源关系"
     },
     "relations": {
       "title": "有来源的语义关系",
@@ -51,9 +51,9 @@
     "stop": "停止生成",
     "configurationRequired": "请在设置 → 实验性 → 会话知识中选择已启用的摘要智能体和模型。",
     "empty": {
-      "search": "没有匹配的总结或关联节点。",
+      "search": "没有匹配的会话摘要或关联节点。",
       "generated": "暂无生成的会话知识。",
-      "selection": "选择主题或总结节点以查看详情和来源。"
+      "selection": "选择概念、知识候选或会话摘要以查看详情和来源。"
     },
     "error": {
       "load": "无法加载已生成的会话知识。",
@@ -64,8 +64,8 @@
       "generatedBy": "由 {{agent}} · {{model}} 生成",
       "created": "创建于",
       "modified": "最后修改于",
-      "summary": "总结",
-      "conclusions": "主要结论",
+      "summary": "会话摘要",
+      "conclusions": "知识候选",
       "topics": "主题",
       "entities": "实体",
       "source": "来源",
@@ -81,13 +81,20 @@
     },
     "nodeType": {
       "project": "项目",
-      "worktree": "工作树",
-      "topic": "主题",
-      "entity": "实体",
-      "knowledge": "总结"
+      "workspace": "工作区",
+      "digest": "会话摘要",
+      "concept": "概念",
+      "statement": "知识候选"
+    },
+    "relation": {
+      "belongsTo": "属于",
+      "occurredIn": "发生于",
+      "about": "关于",
+      "mentions": "提及",
+      "contains": "包含"
     },
     "settings": {
-      "description": "添加图谱和详情工作区，用于浏览生成的主题、结论、项目、工作树和来源会话。",
+      "description": "添加图谱和详情工作区，用于浏览会话摘要、概念、知识候选及其来源。",
       "searchDescription": "基于智能体会话历史构建可搜索的知识层。",
       "toggle": "启用或关闭会话知识",
       "summaryAgent": "摘要智能体",
@@ -103,7 +110,7 @@
       }
     },
     "enrichment": "AI 知识增强",
-    "enrichmentCopy": "每天检查一次新增或有变化的会话，并生成总结、主题、结论和图谱关联。",
+    "enrichmentCopy": "每天检查一次新增或有变化的会话，并生成会话摘要、概念、知识候选和图谱关联。",
     "enrichmentToggle": "启用或关闭 AI 知识增强"
   },
   "app": {

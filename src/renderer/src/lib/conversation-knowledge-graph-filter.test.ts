@@ -30,10 +30,10 @@ const graph: ConversationKnowledgeGraph = {
   nodes: [
     { id: 'project:one', type: 'project', label: 'Orca', itemCount: 1 },
     { id: 'project:two', type: 'project', label: 'Website', itemCount: 1 },
-    { id: 'topic:git', type: 'topic', label: 'Git workflows', itemCount: 2 },
+    { id: 'concept:git', type: 'concept', label: 'Git workflows', itemCount: 2 },
     {
-      id: 'knowledge:one',
-      type: 'knowledge',
+      id: 'digest:one',
+      type: 'digest',
       label: 'Rebase changes',
       itemCount: 1,
       item: item('one', 'Rebase changes', 'Updated the branch', [
@@ -42,18 +42,18 @@ const graph: ConversationKnowledgeGraph = {
       ])
     },
     {
-      id: 'knowledge:two',
-      type: 'knowledge',
+      id: 'digest:two',
+      type: 'digest',
       label: 'Release notes',
       itemCount: 1,
       item: item('two', 'Release notes', 'Published the website')
     }
   ],
   edges: [
-    { source: 'project:one', target: 'knowledge:one' },
-    { source: 'project:two', target: 'knowledge:two' },
-    { source: 'topic:git', target: 'knowledge:one' },
-    { source: 'topic:git', target: 'knowledge:two' }
+    { source: 'digest:one', target: 'project:one', relation: 'belongs-to' },
+    { source: 'digest:two', target: 'project:two', relation: 'belongs-to' },
+    { source: 'digest:one', target: 'concept:git', relation: 'about' },
+    { source: 'digest:two', target: 'concept:git', relation: 'about' }
   ]
 }
 
@@ -67,9 +67,9 @@ describe('conversation knowledge graph filters', () => {
     const result = searchConversationKnowledgeGraph(graph, 'upd brnch')
     expect(conversationKnowledgeItemsInGraph(result).map((entry) => entry.id)).toEqual(['one'])
     expect(result.nodes.map((node) => node.id)).toEqual([
-      'knowledge:one',
+      'digest:one',
       'project:one',
-      'topic:git'
+      'concept:git'
     ])
   })
 
@@ -115,15 +115,15 @@ describe('conversation knowledge graph filters', () => {
       {
         nodes: [
           {
-            id: 'knowledge:claimed',
-            type: 'knowledge',
+            id: 'digest:claimed',
+            type: 'digest',
             label: 'Choices',
             itemCount: 1,
             item: claimed
           },
           {
-            id: 'knowledge:other',
-            type: 'knowledge',
+            id: 'digest:other',
+            type: 'digest',
             label: 'Codex',
             itemCount: 1,
             item: item('other', 'Codex', 'Unrelated')

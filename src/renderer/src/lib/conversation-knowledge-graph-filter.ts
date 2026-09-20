@@ -21,20 +21,22 @@ export function scopeConversationKnowledgeGraphToProject(
   const requestedProject = projectId ? `project:${projectId}` : null
   const selectedProject =
     requestedProject && projectIds.has(requestedProject) ? requestedProject : null
-  const projectKnowledgeIds = new Set(
+  const projectDigestIds = new Set(
     graph.edges
       .filter(
         (edge) =>
-          projectIds.has(edge.source) && (!selectedProject || edge.source === selectedProject)
+          edge.relation === 'belongs-to' &&
+          projectIds.has(edge.target) &&
+          (!selectedProject || edge.target === selectedProject)
       )
-      .map((edge) => edge.target)
+      .map((edge) => edge.source)
   )
   const edges = graph.edges.filter(
     (edge) =>
-      (!selectedProject && projectIds.has(edge.source)) ||
-      (selectedProject && projectIds.has(edge.source) && projectKnowledgeIds.has(edge.target)) ||
-      projectKnowledgeIds.has(edge.source) ||
-      projectKnowledgeIds.has(edge.target)
+      (!selectedProject && projectIds.has(edge.target)) ||
+      (selectedProject && projectIds.has(edge.target) && projectDigestIds.has(edge.source)) ||
+      projectDigestIds.has(edge.source) ||
+      projectDigestIds.has(edge.target)
   )
   const ids = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
   return { nodes: graph.nodes.filter((node) => ids.has(node.id)), edges }
@@ -62,7 +64,7 @@ export function searchConversationKnowledgeGraph(
       continue
     }
     directScores.set(node.id, score)
-    if (node.type === 'knowledge') {
+    if (node.type === 'digest') {
       knowledgeScores.set(node.id, score)
     }
   }
@@ -98,7 +100,7 @@ export function searchConversationKnowledgeGraph(
 export function conversationKnowledgeItemsInGraph(
   graph: ConversationKnowledgeGraph
 ): ConversationKnowledgeItem[] {
-  return graph.nodes.flatMap((node) => (node.type === 'knowledge' && node.item ? [node.item] : []))
+  return graph.nodes.flatMap((node) => (node.type === 'digest' && node.item ? [node.item] : []))
 }
 
 function addRelatedKnowledgeScore(
@@ -109,7 +111,7 @@ function addRelatedKnowledgeScore(
   knowledgeScores: Map<string, number>
 ): void {
   const score = directScores.get(matchedId)
-  if (score === undefined || nodeById.get(relatedId)?.type !== 'knowledge') {
+  if (score === undefined || nodeById.get(relatedId)?.type !== 'digest') {
     return
   }
   knowledgeScores.set(relatedId, Math.max(knowledgeScores.get(relatedId) ?? 0, score * 0.6))
