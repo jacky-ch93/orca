@@ -95,6 +95,14 @@
       "contains": "contains",
       "records": "records"
     },
+    "conceptOverview": {
+      "eyebrow": "Concept overview",
+      "description": "Observed in {{count}} conversation digests. This is not a verified knowledge note.",
+      "sourceBacked": "Source-backed statements",
+      "noSourceBacked": "No source-backed statements are linked to this concept yet.",
+      "digests": "Conversation digests",
+      "noDigests": "No conversation digests are linked to this concept."
+    },
     "settings": {
       "description": "Adds a graph and detail workspace for exploring conversation digests, concepts, knowledge candidates, and their sources.",
       "searchDescription": "Build a searchable knowledge layer from agent session history.",

@@ -20,6 +20,7 @@ export function ConversationKnowledgeGraphPreview({
   graph,
   selectedItemId,
   onSelectItem,
+  onSelectNode,
   viewMode = 'all',
   projectId = null,
   emptyMessage
@@ -27,6 +28,7 @@ export function ConversationKnowledgeGraphPreview({
   graph: ConversationKnowledgeGraph
   selectedItemId?: string | null
   onSelectItem: (item: ConversationKnowledgeItem) => void
+  onSelectNode?: (node: ConversationKnowledgeGraphNode) => void
   viewMode?: 'all' | 'project'
   projectId?: string | null
   emptyMessage?: string
@@ -145,6 +147,7 @@ export function ConversationKnowledgeGraphPreview({
             type="button"
             data-current={node.item?.id === selectedItemId || undefined}
             onClick={() => {
+              onSelectNode?.(node)
               if (node.item) {
                 setFocusedNode((current) =>
                   toggleFocusedNode(current, node.id, viewMode, projectId)
