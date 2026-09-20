@@ -2,6 +2,7 @@ import type { CommitMessageAgentEnvironmentResolvers } from '../text-generation/
 import { listAiVaultSessions } from './cached-session-list'
 import { ConversationKnowledgeService } from './conversation-knowledge-service'
 import { ConversationKnowledgeStore } from './conversation-knowledge-store'
+import { ConversationKnowledgeIndexCheckpointStore } from './conversation-knowledge-index-checkpoint-store'
 import { enrichAiVaultSession } from './session-enrichment'
 import { readAiVaultHistorySession } from './session-history'
 
@@ -35,7 +36,8 @@ export function getConversationKnowledgeService(options: {
         ...args,
         environmentResolvers: entry.getEnvironmentResolvers()
       }),
-    store: new ConversationKnowledgeStore(options.userDataPath)
+    store: new ConversationKnowledgeStore(options.userDataPath),
+    checkpointStore: new ConversationKnowledgeIndexCheckpointStore(options.userDataPath)
   })
   entries.set(options.userDataPath, entry)
   return entry.service

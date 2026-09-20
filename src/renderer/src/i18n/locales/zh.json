@@ -6,7 +6,18 @@
     "status": {
       "indexing": "正在生成",
       "indexed": "已生成",
-      "progress": "{{state}} · {{completed}}/{{total}} · {{failed}} 项失败"
+      "progress": "{{state}} · {{completed}}/{{total}} · {{failed}} 项失败",
+      "panelLabel": "生成进度",
+      "ready": "等待生成",
+      "readyDescription": "生成更新会索引新增或有变化的会话。",
+      "progressCount": "{{completed}} / {{total}}",
+      "currentSession": "智能体正在处理：{{title}}",
+      "waitingForAgent": "正在等待下一个智能体任务。",
+      "completed": "已完成",
+      "active": "进行中",
+      "queued": "排队中",
+      "failed": "失败",
+      "canceled": "已停止"
     },
     "items": {
       "count": "显示 {{visible}} 项，共 {{total}} 项",

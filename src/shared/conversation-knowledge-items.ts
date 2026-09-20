@@ -86,6 +86,12 @@ export type ConversationKnowledgeIndexStatus = {
   total: number
   completed: number
   failed: number
+  canceled?: number
+  activeSession?: {
+    agent: AiVaultAgent
+    sessionId: string
+    title: string
+  }
 }
 
 export function isConversationKnowledgeGenerationTitle(title: string): boolean {

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ConversationKnowledgeService } from './conversation-knowledge-service'
 import type { AiVaultSession } from '../../shared/ai-vault-types'
+import type { AiVaultSessionEnrichment } from '../../shared/ai-vault-history-types'
 import {
   CONVERSATION_KNOWLEDGE_FORMAT_VERSION,
   type ConversationKnowledgeItem
@@ -90,6 +91,43 @@ describe('ConversationKnowledgeService', () => {
       completed: 0,
       failed: 1
     })
+  })
+
+  it('resumes an interrupted checkpoint and retries its active session', async () => {
+    const resumed = session('resume')
+    const enrich = vi.fn().mockResolvedValue({
+      summary: 'Resumed',
+      topics: [],
+      conclusions: [],
+      entities: [],
+      searchTerms: [],
+      handoff: [],
+      agent: 'codex',
+      model: 'gpt-5'
+    })
+    const write = vi.fn()
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([resumed]),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
+      enrich,
+      store: { list: vi.fn().mockResolvedValue([]), upsert: vi.fn(), remove: vi.fn() },
+      checkpointStore: {
+        read: vi.fn().mockResolvedValue({
+          version: 1,
+          state: 'running',
+          config: { generatorAgent: 'codex', generatorModel: 'gpt-5' },
+          total: 1,
+          completed: 0,
+          failed: 0,
+          pending: [{ executionHostId: 'local', agent: 'claude', sessionId: 'resume' }]
+        }),
+        write
+      }
+    })
+
+    await vi.waitFor(() => expect(enrich).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(service.getIndexStatus().state).toBe('idle'))
+    expect(write).toHaveBeenCalledWith(expect.objectContaining({ state: 'running', pending: [] }))
   })
 
   it('reindexes a legacy item whose enrichment format is stale', async () => {
@@ -208,6 +246,55 @@ describe('ConversationKnowledgeService', () => {
       completed: 1,
       failed: 0
     })
+  })
+
+  it('reports the active session and marks unfinished work as stopped when canceled', async () => {
+    let completeEnrichment!: () => void
+    const enrich = vi.fn(
+      () =>
+        new Promise<AiVaultSessionEnrichment>((resolve) => {
+          completeEnrichment = () =>
+            resolve({
+              summary: 'Summary',
+              topics: [],
+              conclusions: [],
+              entities: [],
+              searchTerms: [],
+              handoff: [],
+              agent: 'codex',
+              model: 'gpt-5'
+            })
+        })
+    )
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([session('active')]),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
+      enrich,
+      store: {
+        list: vi.fn().mockResolvedValue([]),
+        upsert: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined)
+      }
+    })
+
+    await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
+    await vi.waitFor(() =>
+      expect(service.getIndexStatus().activeSession).toMatchObject({ sessionId: 'active' })
+    )
+
+    service.cancelIndex()
+
+    expect(service.getIndexStatus()).toMatchObject({
+      state: 'idle',
+      completed: 0,
+      failed: 0,
+      canceled: 1
+    })
+    expect(service.getIndexStatus().activeSession).toBeUndefined()
+
+    completeEnrichment()
+    await vi.waitFor(() => expect(service.getIndexStatus().state).toBe('idle'))
+    expect(service.getIndexStatus().completed).toBe(0)
   })
 
   it('verifies and removes legacy summaries that describe an empty transcript', async () => {

@@ -14,7 +14,18 @@
     "status": {
       "indexing": "Indexing",
       "indexed": "Indexed",
-      "progress": "{{state}} · {{completed}}/{{total}} · {{failed}} failed"
+      "progress": "{{state}} · {{completed}}/{{total}} · {{failed}} failed",
+      "panelLabel": "Generation progress",
+      "ready": "Ready to generate",
+      "readyDescription": "Generate updates to index new or changed conversations.",
+      "progressCount": "{{completed}} of {{total}}",
+      "currentSession": "Agent is processing: {{title}}",
+      "waitingForAgent": "Waiting for the next agent task.",
+      "completed": "Completed",
+      "active": "In progress",
+      "queued": "Queued",
+      "failed": "Failed",
+      "canceled": "Stopped"
     },
     "items": {
       "count": "Showing {{visible}} of {{total}} items",

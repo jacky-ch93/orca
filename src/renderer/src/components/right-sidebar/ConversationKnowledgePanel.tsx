@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next'
 import { ConversationKnowledgeDetail } from './ConversationKnowledgeDetail'
 import { ConversationKnowledgeClaimResults } from './ConversationKnowledgeClaimResults'
 import { ConversationKnowledgeRelationGraph } from './ConversationKnowledgeRelationGraph'
-import { ConversationKnowledgeIndexButton } from './ConversationKnowledgeIndexButton'
+import { ConversationKnowledgeIndexProgress } from './ConversationKnowledgeIndexProgress'
 import {
   ConversationKnowledgeGraphModeSwitch,
   type ConversationKnowledgeGraphMode
@@ -219,8 +219,8 @@ export default function ConversationKnowledgePanel({
 
   return (
     <div className="@container/conversation-knowledge flex min-h-0 flex-1 flex-col bg-transparent">
-      <header className="flex items-start justify-between gap-3 border-b border-border p-3">
-        <div>
+      <header className="flex items-start gap-3 border-b border-border p-3">
+        <div className="shrink-0">
           <h1 className="text-sm font-medium">
             {translate('conversationKnowledge.name', 'Conversation Knowledge')}
           </h1>
@@ -230,23 +230,6 @@ export default function ConversationKnowledgePanel({
               'AI-generated topics, conclusions, and relationships from agent history.'
             )}
           </p>
-          {status.total ? (
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {translate(
-                'conversationKnowledge.status.progress',
-                '{{state}} · {{completed}}/{{total}} · {{failed}} failed',
-                {
-                  state:
-                    status.state === 'running'
-                      ? translate('conversationKnowledge.status.indexing', 'Indexing')
-                      : translate('conversationKnowledge.status.indexed', 'Indexed'),
-                  completed: status.completed,
-                  total: status.total,
-                  failed: status.failed
-                }
-              )}
-            </p>
-          ) : null}
           <p className="mt-1 text-[11px] text-muted-foreground">
             {scopedItems.length
               ? translate(
@@ -301,30 +284,32 @@ export default function ConversationKnowledgePanel({
             </div>
           </div>
         </div>
-        <div className="flex gap-1">
-          <ConversationKnowledgeIndexButton
-            running={status.state === 'running'}
-            disabled={!generatorAgent || !generatorModel}
-            onGenerateUpdates={() => void startIndex(false)}
-            onRegenerateAll={() => void startIndex(true)}
-            onStop={() => void stopIndex()}
-          />
-          {onClose ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={onClose}>
-                  <X />
-                  <span className="sr-only">
-                    {translate('auto.components.ui.sheet.1189e9fe0a', 'Close')}
-                  </span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={4}>
-                {translate('auto.components.ui.sheet.1189e9fe0a', 'Close')}
-              </TooltipContent>
-            </Tooltip>
-          ) : null}
-        </div>
+        {generatorAgent && generatorModel ? (
+          <div className="min-w-0 flex-1">
+            <ConversationKnowledgeIndexProgress
+              status={status}
+              disabled={!generatorAgent || !generatorModel}
+              onGenerateUpdates={() => void startIndex(false)}
+              onRegenerateAll={() => void startIndex(true)}
+              onStop={() => void stopIndex()}
+            />
+          </div>
+        ) : null}
+        {onClose ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon-sm" variant="ghost" onClick={onClose}>
+                <X />
+                <span className="sr-only">
+                  {translate('auto.components.ui.sheet.1189e9fe0a', 'Close')}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={4}>
+              {translate('auto.components.ui.sheet.1189e9fe0a', 'Close')}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
       </header>
 
       {loadError ? (
