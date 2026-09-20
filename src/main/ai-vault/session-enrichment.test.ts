@@ -16,6 +16,9 @@ describe('parseConversationKnowledgeOutput', () => {
     expect(CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION).toContain(
       'Do not omit a qualifying claim'
     )
+    expect(CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION).toContain(
+      'Framework A defines the core agent'
+    )
   })
 
   it('redacts common credentials before history is sent to a generator', () => {

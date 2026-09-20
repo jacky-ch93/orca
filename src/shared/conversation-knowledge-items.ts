@@ -3,7 +3,7 @@ import type { ExecutionHostId } from './execution-host'
 import type { TuiAgent } from './tui-agent'
 import { reconcileConversationKnowledgeConflicts } from './conversation-knowledge-conflicts'
 
-export const CONVERSATION_KNOWLEDGE_FORMAT_VERSION = 2
+export const CONVERSATION_KNOWLEDGE_FORMAT_VERSION = 3
 
 export type ConversationKnowledgeItem = {
   id: string
