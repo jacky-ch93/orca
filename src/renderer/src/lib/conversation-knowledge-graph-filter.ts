@@ -46,8 +46,8 @@ export function searchConversationKnowledgeGraph(
   graph: ConversationKnowledgeGraph,
   query: string
 ): ConversationKnowledgeGraph {
-  const tokens = normalizeQuery(query)
-  if (!tokens.length) {
+  const { filters, tokens } = parseSourceBackedFilters(query)
+  if (!tokens.length && !hasSourceBackedFilters(filters) && !hasStructuredClaimTerms(query)) {
     return graph
   }
   const nodeById = new Map(graph.nodes.map((node) => [node.id, node]))
@@ -55,11 +55,15 @@ export function searchConversationKnowledgeGraph(
   const knowledgeScores = new Map<string, number>()
   const structuredClaimQuery = hasStructuredClaimTerms(query)
   for (const node of graph.nodes) {
+    if (hasSourceBackedFilters(filters) && !matchesSourceBackedFilters(node, filters)) {
+      continue
+    }
     const claimScore = node.item
       ? (searchConversationKnowledgeClaims([node.item], query)[0]?.score ?? null)
       : null
-    const contentScore = structuredClaimQuery ? null : scoreNode(node, tokens)
-    const score = claimScore === null ? contentScore : Math.max(claimScore, contentScore ?? 0)
+    const contentScore = structuredClaimQuery || !tokens.length ? null : scoreNode(node, tokens)
+    const filterScore = hasSourceBackedFilters(filters) ? 1 : null
+    const score = highestScore(claimScore, contentScore, filterScore)
     if (score === null) {
       continue
     }
@@ -72,9 +76,11 @@ export function searchConversationKnowledgeGraph(
     addRelatedKnowledgeScore(edge.source, edge.target, nodeById, directScores, knowledgeScores)
     addRelatedKnowledgeScore(edge.target, edge.source, nodeById, directScores, knowledgeScores)
   }
-  const edges = graph.edges.filter(
-    (edge) => knowledgeScores.has(edge.source) || knowledgeScores.has(edge.target)
-  )
+  const edges = hasSourceBackedFilters(filters)
+    ? graph.edges.filter((edge) => directScores.has(edge.source) || directScores.has(edge.target))
+    : graph.edges.filter(
+        (edge) => knowledgeScores.has(edge.source) || knowledgeScores.has(edge.target)
+      )
   const ids = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
   for (const id of knowledgeScores.keys()) {
     ids.add(id)
@@ -95,6 +101,89 @@ export function searchConversationKnowledgeGraph(
         (originalOrder.get(left.id) ?? 0) - (originalOrder.get(right.id) ?? 0)
     )
   return { nodes, edges }
+}
+
+type SourceBackedFilters = {
+  reliability?: 'user-confirmed' | 'verified' | 'inferred' | 'proposal'
+  kind?: 'decision' | 'constraint' | 'progress' | 'open-loop'
+  lifecycle?: 'active' | 'superseded' | 'conflicted' | 'expired'
+}
+
+function parseSourceBackedFilters(query: string): {
+  filters: SourceBackedFilters
+  tokens: string[]
+} {
+  const filters: SourceBackedFilters = {}
+  const tokens: string[] = []
+  for (const token of normalizeQuery(query)) {
+    const [key, value] = token.split(':', 2)
+    if (key === 'reliability' && isHandoffReliability(value)) {
+      filters.reliability = value
+    } else if (key === 'kind' && isHandoffKind(value)) {
+      filters.kind = value
+    } else if (key === 'lifecycle' && isHandoffLifecycle(value)) {
+      filters.lifecycle = value
+    } else {
+      tokens.push(token)
+    }
+  }
+  return { filters, tokens }
+}
+
+function isHandoffReliability(
+  value: string | undefined
+): value is NonNullable<SourceBackedFilters['reliability']> {
+  return (
+    value === 'user-confirmed' ||
+    value === 'verified' ||
+    value === 'inferred' ||
+    value === 'proposal'
+  )
+}
+
+function isHandoffKind(
+  value: string | undefined
+): value is NonNullable<SourceBackedFilters['kind']> {
+  return (
+    value === 'decision' || value === 'constraint' || value === 'progress' || value === 'open-loop'
+  )
+}
+
+function isHandoffLifecycle(
+  value: string | undefined
+): value is NonNullable<SourceBackedFilters['lifecycle']> {
+  return (
+    value === 'active' || value === 'superseded' || value === 'conflicted' || value === 'expired'
+  )
+}
+
+function hasSourceBackedFilters(filters: SourceBackedFilters): boolean {
+  return (
+    filters.reliability !== undefined ||
+    filters.kind !== undefined ||
+    filters.lifecycle !== undefined
+  )
+}
+
+function matchesSourceBackedFilters(
+  node: ConversationKnowledgeGraphNode,
+  filters: SourceBackedFilters
+): boolean {
+  const sourceBacked = node.sourceBacked
+  if (!sourceBacked) {
+    return false
+  }
+  return (
+    (filters.reliability === undefined || sourceBacked.reliability === filters.reliability) &&
+    (filters.kind === undefined || sourceBacked.kind === filters.kind) &&
+    (filters.lifecycle === undefined ||
+      (sourceBacked.lifecycle?.status ?? 'active') === filters.lifecycle)
+  )
+}
+
+function highestScore(...scores: (number | null)[]): number | null {
+  const values = scores.filter((score): score is number => score !== null)
+  return values.length ? Math.max(...values) : null
 }
 
 export function conversationKnowledgeItemsInGraph(

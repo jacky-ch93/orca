@@ -135,4 +135,51 @@ describe('conversation knowledge graph filters', () => {
     )
     expect(conversationKnowledgeItemsInGraph(result).map((entry) => entry.id)).toEqual(['claimed'])
   })
+
+  it('filters source-backed statements by reliability, kind, and lifecycle', () => {
+    const sourceItem = item('source', 'Source-backed work', 'Summary')
+    const graphWithStatements: ConversationKnowledgeGraph = {
+      nodes: [
+        {
+          id: 'digest:source',
+          type: 'digest',
+          label: 'Source-backed work',
+          itemCount: 1,
+          item: sourceItem
+        },
+        {
+          id: 'statement:confirmed',
+          type: 'statement',
+          label: 'Keep the durable checkpoint.',
+          itemCount: 1,
+          item: sourceItem,
+          sourceBacked: { kind: 'decision', reliability: 'user-confirmed' }
+        },
+        {
+          id: 'statement:proposal',
+          type: 'statement',
+          label: 'Consider a periodic checkpoint.',
+          itemCount: 1,
+          item: sourceItem,
+          sourceBacked: {
+            kind: 'open-loop',
+            reliability: 'proposal',
+            lifecycle: { status: 'superseded' }
+          }
+        }
+      ],
+      edges: [
+        { source: 'digest:source', target: 'statement:confirmed', relation: 'records' },
+        { source: 'digest:source', target: 'statement:proposal', relation: 'records' }
+      ]
+    }
+
+    const reliable = searchConversationKnowledgeGraph(
+      graphWithStatements,
+      'reliability:user-confirmed kind:decision lifecycle:active'
+    )
+
+    expect(reliable.nodes.map((node) => node.id)).toEqual(['statement:confirmed', 'digest:source'])
+    expect(conversationKnowledgeItemsInGraph(reliable).map((entry) => entry.id)).toEqual(['source'])
+  })
 })

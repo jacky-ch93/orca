@@ -30,7 +30,7 @@
     },
     "search": {
       "ariaLabel": "搜索会话知识",
-      "placeholder": "搜索陈述、会话摘要或节点"
+      "placeholder": "搜索陈述、摘要或 reliability:verified"
     },
     "claimResults": "匹配的陈述",
     "graphMode": {

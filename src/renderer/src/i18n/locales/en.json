@@ -38,7 +38,7 @@
     },
     "search": {
       "ariaLabel": "Search conversation knowledge",
-      "placeholder": "Search statements, conversation digests, or nodes"
+      "placeholder": "Search statements, digests, or reliability:verified"
     },
     "claimResults": "Matching statements",
     "graphMode": {
