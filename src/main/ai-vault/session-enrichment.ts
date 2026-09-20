@@ -19,6 +19,9 @@ const MAX_SUMMARY_MESSAGES = 12
 const MAX_SUMMARY_MESSAGE_CHARS = 1_200
 const MAX_SUMMARY_TRANSCRIPT_CHARS = 12_000
 
+export const CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION =
+  'For every user-confirmed handoff that records a direct choice, default, format, architecture, or constraint, emit claim when one user message contains both its literal subject and literal object. Copy those subject and object strings verbatim from that message; relation may be a concise normalized name. evidence.messageId must name that literal message. When a later user confirmation establishes the choice, add its id to supportingMessageIds. Do not omit a qualifying claim merely because the handoff text paraphrases it. Omit claim unless one user message literally names its subject and object and the relation can have only one value in the same workspace.'
+
 export async function enrichAiVaultSession(input: {
   session: AiVaultSession
   messages: readonly { id: string; role: string; text: string }[]
@@ -44,8 +47,9 @@ export async function enrichAiVaultSession(input: {
     'You are an information curator for a developer workspace.',
     `Write all human-readable fields in ${summaryLanguage(input.language)}.`,
     'Summarize the conversation below as strict JSON only, with this schema:',
-    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"],"searchTerms":["4-8 alternate phrases, synonyms, or likely search queries"],"handoff":[{"kind":"decision|constraint|progress|open-loop","text":"short statement","reliability":"user-confirmed|verified|inferred|proposal","evidence":{"kind":"conversation|tool-result","messageId":"source message id"},"claim":{"subject":"literal subject from user message","relation":"single-valued relation name","object":"literal value from user message","cardinality":"single"}}]}',
-    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters. Keep search terms short and include common English technical aliases when useful. Only mark user-confirmed or verified when the transcript directly supports it; otherwise use inferred or proposal. Omit claim unless one user message literally names its subject and object and the relation can have only one value in the same workspace.',
+    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"],"searchTerms":["4-8 alternate phrases, synonyms, or likely search queries"],"handoff":[{"kind":"decision|constraint|progress|open-loop","text":"short statement","reliability":"user-confirmed|verified|inferred|proposal","evidence":{"kind":"conversation|tool-result","messageId":"literal source message id","supportingMessageIds":["optional confirming user message ids"]},"claim":{"subject":"literal subject from user message","relation":"single-valued relation name","object":"literal value from user message","cardinality":"single"}}]}',
+    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters. Keep search terms short and include common English technical aliases when useful. Only mark user-confirmed or verified when the transcript directly supports it; otherwise use inferred or proposal.',
+    CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION,
     `Conversation title: ${input.session.title}`,
     transcript || '(conversation has no readable user/assistant messages)'
   ].join('\n\n')

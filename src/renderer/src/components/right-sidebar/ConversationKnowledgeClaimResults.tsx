@@ -2,7 +2,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { ConversationKnowledgeClaimMatch } from '@/lib/conversation-knowledge-claim-search'
-import type { ConversationKnowledgeHandoffEntry } from '../../../../shared/conversation-knowledge-items'
+import {
+  conversationKnowledgeEvidenceMessageIds,
+  type ConversationKnowledgeHandoffEntry
+} from '../../../../shared/conversation-knowledge-items'
 
 export function ConversationKnowledgeClaimResults({
   matches,
@@ -45,7 +48,7 @@ export function ConversationKnowledgeClaimResults({
                     <span>{claimReliabilityLabel(match.entry.reliability)}</span>
                     <span>
                       {match.item.source.agent} · {match.item.source.sessionId} ·{' '}
-                      {evidence.messageId}
+                      {conversationKnowledgeEvidenceMessageIds(match.entry).join(' · ')}
                     </span>
                   </span>
                 </span>

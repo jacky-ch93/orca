@@ -6,6 +6,7 @@ import { translate } from '@/i18n/i18n'
 import type { ConversationKnowledgeClaimMatch } from '@/lib/conversation-knowledge-claim-search'
 import type { ConversationKnowledgeRelation } from '@/lib/conversation-knowledge-relations'
 import { claimReliabilityLabel, claimStatusLabel } from './ConversationKnowledgeClaimResults'
+import { conversationKnowledgeEvidenceMessageIds } from '../../../../shared/conversation-knowledge-items'
 
 function conceptKey(value: string): string {
   return value.normalize('NFKC').toLocaleLowerCase().trim()
@@ -94,7 +95,7 @@ export function ConversationKnowledgeRelationGraph({
                   <span>{claimReliabilityLabel(assertion.entry.reliability)}</span>
                   <span className="min-w-0 truncate">
                     {assertion.item.source.agent} · {assertion.item.source.sessionId} ·{' '}
-                    {assertion.entry.evidence.messageId}
+                    {conversationKnowledgeEvidenceMessageIds(assertion.entry).join(' · ')}
                   </span>
                 </Button>
               ))}

@@ -31,7 +31,11 @@ describe('ConversationKnowledgeDetail', () => {
                 kind: 'decision',
                 text: 'Keep the execution host authoritative.',
                 reliability: 'user-confirmed',
-                evidence: { kind: 'conversation', messageId: 'user-1' }
+                evidence: {
+                  kind: 'conversation',
+                  messageId: 'user-1',
+                  supportingMessageIds: ['user-0']
+                }
               },
               {
                 kind: 'decision',
@@ -50,6 +54,7 @@ describe('ConversationKnowledgeDetail', () => {
     expect(markup).toContain('Included in agent context')
     expect(markup).toContain('Proposal')
     expect(markup).toContain('assistant-1')
+    expect(markup).toContain('user-0')
   })
 
   it('shows inactive handoff lifecycle states as excluded from agent context', () => {

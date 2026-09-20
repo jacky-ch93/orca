@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION,
   parseConversationKnowledgeOutput,
   redactConversationText,
   resolveConversationKnowledgeModel,
@@ -8,6 +9,15 @@ import {
 import { retainSourceBackedHandoff } from './conversation-knowledge-handoff-output'
 
 describe('parseConversationKnowledgeOutput', () => {
+  it('requires verbatim user evidence for qualifying structured claims', () => {
+    expect(CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION).toContain(
+      'Copy those subject and object strings verbatim'
+    )
+    expect(CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION).toContain(
+      'Do not omit a qualifying claim'
+    )
+  })
+
   it('redacts common credentials before history is sent to a generator', () => {
     expect(redactConversationText('api_key=sk-test_1234567890abcdef Bearer abcdefghijklmnop')).toBe(
       'api_key: [REDACTED_SECRET] Bearer [REDACTED_TOKEN]'
@@ -112,6 +122,87 @@ describe('parseConversationKnowledgeOutput', () => {
         [{ id: 'user-1', role: 'user', text: 'Orca uses Codex for summaries.' }]
       )[0]?.claim
     ).toEqual(entry.claim)
+  })
+
+  it('keeps a claim when supplemental user evidence confirms its choice', () => {
+    const entry = {
+      kind: 'decision' as const,
+      text: 'Use NOOA with LangGraph.',
+      reliability: 'user-confirmed' as const,
+      evidence: {
+        kind: 'conversation' as const,
+        messageId: 'user-choice',
+        supportingMessageIds: ['user-confirmation']
+      },
+      claim: {
+        subject: 'NOOA',
+        relation: 'workflow-wrapper',
+        object: 'LangGraph',
+        cardinality: 'single' as const
+      }
+    }
+    expect(
+      retainSourceBackedHandoff(
+        [entry],
+        [
+          {
+            id: 'user-choice',
+            role: 'user',
+            text: 'NOOA 做核心 agent 定义 + LangGraph 包外层状态机。'
+          },
+          { id: 'user-confirmation', role: 'user', text: '好，使用方案 A 进行吧。' }
+        ]
+      )
+    ).toEqual([entry])
+  })
+
+  it('drops a claim when any supplemental evidence is not a user message', () => {
+    const entry = {
+      kind: 'decision' as const,
+      text: 'Use NOOA with LangGraph.',
+      reliability: 'user-confirmed' as const,
+      evidence: {
+        kind: 'conversation' as const,
+        messageId: 'user-choice',
+        supportingMessageIds: ['assistant-confirmation']
+      },
+      claim: {
+        subject: 'NOOA',
+        relation: 'workflow-wrapper',
+        object: 'LangGraph',
+        cardinality: 'single' as const
+      }
+    }
+    expect(
+      retainSourceBackedHandoff(
+        [entry],
+        [
+          { id: 'user-choice', role: 'user', text: 'NOOA uses LangGraph.' },
+          { id: 'assistant-confirmation', role: 'assistant', text: 'Confirmed.' }
+        ]
+      )[0]?.claim
+    ).toBeUndefined()
+  })
+
+  it('drops a deictic confirmation claim while retaining its handoff', () => {
+    const entry = {
+      kind: 'decision' as const,
+      text: 'Use plan A.',
+      reliability: 'user-confirmed' as const,
+      evidence: { kind: 'conversation' as const, messageId: 'user-1' },
+      claim: {
+        subject: '方案A',
+        relation: 'chosen-approach',
+        object: '进行',
+        cardinality: 'single' as const
+      }
+    }
+    expect(
+      retainSourceBackedHandoff(
+        [entry],
+        [{ id: 'user-1', role: 'user', text: '好，使用方案A进行吧' }]
+      )
+    ).toEqual([{ ...entry, claim: undefined }])
   })
 
   it('samples the beginning, dynamic middle, and ending of long sessions', () => {

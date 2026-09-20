@@ -13,10 +13,14 @@ export function retainSourceBackedHandoff(
   const messagesById = new Map(messages.map((message) => [message.id, message]))
   return handoff.flatMap((entry) => {
     const message = messagesById.get(entry.evidence.messageId)
+    const supportingMessages = (entry.evidence.supportingMessageIds ?? []).map((messageId) =>
+      messagesById.get(messageId)
+    )
     if (
       entry.reliability !== 'user-confirmed' ||
       entry.evidence.kind !== 'conversation' ||
-      message?.role !== 'user'
+      message?.role !== 'user' ||
+      supportingMessages.some((supportingMessage) => supportingMessage?.role !== 'user')
     ) {
       return []
     }
@@ -27,11 +31,24 @@ export function retainSourceBackedHandoff(
     const subject = entry.claim.subject.normalize('NFKC').toLocaleLowerCase()
     const object = entry.claim.object.normalize('NFKC').toLocaleLowerCase()
     return [
-      subject && object && text.includes(subject) && text.includes(object)
+      subject && object && text.includes(subject) && text.includes(object) && isSpecificClaim(entry)
         ? entry
         : { ...entry, claim: undefined }
     ]
   })
+}
+
+function isSpecificClaim(entry: ConversationKnowledgeHandoffEntry): boolean {
+  const claim = entry.claim
+  if (!claim) {
+    return false
+  }
+  const subject = claim.subject.normalize('NFKC').trim()
+  const object = claim.object.normalize('NFKC').trim()
+  return (
+    !/^方案\s*[A-Za-z0-9]+$/u.test(subject) ||
+    !/^(?:进行|确认|同意|继续|好|好的|可以)$/u.test(object)
+  )
 }
 
 function normalizeEntry(
@@ -40,6 +57,18 @@ function normalizeEntry(
   return {
     ...entry,
     text: entry.text.trim().slice(0, 500),
+    evidence: {
+      ...entry.evidence,
+      ...(entry.evidence.supportingMessageIds
+        ? {
+            supportingMessageIds: [...new Set(entry.evidence.supportingMessageIds)]
+              .filter((messageId) => messageId !== entry.evidence.messageId)
+              .map((messageId) => messageId.trim())
+              .filter(Boolean)
+              .slice(0, 3)
+          }
+        : {})
+    },
     ...(entry.claim
       ? {
           claim: {
@@ -72,6 +101,9 @@ function isHandoffEntry(value: unknown): value is ConversationKnowledgeHandoffEn
     (evidenceRecord.kind === 'conversation' || evidenceRecord.kind === 'tool-result') &&
     typeof evidenceRecord.messageId === 'string' &&
     evidenceRecord.messageId.length > 0 &&
+    (evidenceRecord.supportingMessageIds === undefined ||
+      (Array.isArray(evidenceRecord.supportingMessageIds) &&
+        evidenceRecord.supportingMessageIds.every((messageId) => typeof messageId === 'string'))) &&
     isOptionalClaim(record.claim)
   )
 }

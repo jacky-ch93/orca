@@ -5,7 +5,10 @@ import { Badge } from '@/components/ui/badge'
 import { translate } from '@/i18n/i18n'
 import { selectConversationHistoryTarget } from '@/lib/conversation-history-selection'
 import { useAppStore } from '@/store'
-import type { ConversationKnowledgeItem } from '../../../../shared/conversation-knowledge-items'
+import {
+  conversationKnowledgeEvidenceMessageIds,
+  type ConversationKnowledgeItem
+} from '../../../../shared/conversation-knowledge-items'
 import { SessionTime } from './ai-vault-session-time'
 
 export function ConversationKnowledgeDetail({
@@ -142,7 +145,9 @@ function HandoffList({
                 ) : null}
               </div>
               <p className="mt-1 text-sm leading-5">{entry.text}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">{entry.evidence.messageId}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {conversationKnowledgeEvidenceMessageIds(entry).join(' · ')}
+              </p>
             </li>
           )
         })}

@@ -3,7 +3,7 @@ import type { ExecutionHostId } from './execution-host'
 import type { TuiAgent } from './tui-agent'
 import { reconcileConversationKnowledgeConflicts } from './conversation-knowledge-conflicts'
 
-export const CONVERSATION_KNOWLEDGE_FORMAT_VERSION = 1
+export const CONVERSATION_KNOWLEDGE_FORMAT_VERSION = 2
 
 export type ConversationKnowledgeItem = {
   id: string
@@ -41,6 +41,7 @@ export type ConversationKnowledgeHandoffEntry = {
   evidence: {
     kind: 'conversation' | 'tool-result'
     messageId: string
+    supportingMessageIds?: string[]
   }
   lifecycle?: {
     status: 'active' | 'superseded' | 'conflicted' | 'expired'
@@ -52,6 +53,12 @@ export type ConversationKnowledgeHandoffEntry = {
     object: string
     cardinality: 'single'
   }
+}
+
+export function conversationKnowledgeEvidenceMessageIds(
+  entry: ConversationKnowledgeHandoffEntry
+): string[] {
+  return [...new Set([entry.evidence.messageId, ...(entry.evidence.supportingMessageIds ?? [])])]
 }
 
 export type ConversationKnowledgeListResult = {

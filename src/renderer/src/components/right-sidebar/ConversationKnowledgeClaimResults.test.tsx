@@ -25,7 +25,11 @@ describe('ConversationKnowledgeClaimResults', () => {
         kind: 'decision',
         text: 'Orca uses Claude.',
         reliability: 'user-confirmed',
-        evidence: { kind: 'conversation', messageId: 'user-2' },
+        evidence: {
+          kind: 'conversation',
+          messageId: 'user-2',
+          supportingMessageIds: ['user-1']
+        },
         lifecycle: { status: 'conflicted' },
         claim: {
           subject: 'Orca',
@@ -43,5 +47,6 @@ describe('ConversationKnowledgeClaimResults', () => {
     expect(markup).toContain('Conflicted')
     expect(markup).toContain('session-1')
     expect(markup).toContain('user-2')
+    expect(markup).toContain('user-1')
   })
 })

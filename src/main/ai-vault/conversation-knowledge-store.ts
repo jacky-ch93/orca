@@ -132,6 +132,9 @@ function isHandoffEntry(value: unknown): boolean {
       record.reliability === 'proposal') &&
     (evidenceRecord.kind === 'conversation' || evidenceRecord.kind === 'tool-result') &&
     typeof evidenceRecord.messageId === 'string' &&
+    (evidenceRecord.supportingMessageIds === undefined ||
+      (Array.isArray(evidenceRecord.supportingMessageIds) &&
+        evidenceRecord.supportingMessageIds.every((messageId) => typeof messageId === 'string'))) &&
     (record.lifecycle === undefined || isLifecycle(record.lifecycle)) &&
     (record.claim === undefined || isClaim(record.claim))
   )
