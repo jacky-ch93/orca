@@ -5,7 +5,7 @@ import type { Repo } from './repo-types'
 import type { Worktree } from './worktree/types'
 
 describe('buildConversationKnowledgeGraph', () => {
-  it('builds semantic concept, statement, and context relationships from digests', () => {
+  it('keeps candidates separate from source-backed statements in digest relationships', () => {
     const repos = [{ id: 'repo', path: '/code/orca', displayName: 'orca' }] as Repo[]
     const worktrees = [
       { id: 'feature', repoId: 'repo', path: '/code/orca/feature', branch: 'feature' }
@@ -16,6 +16,14 @@ describe('buildConversationKnowledgeGraph', () => {
     ]
     items[0].knowledge.entities = ['SSH', 'Codex']
     items[0].knowledge.conclusions = ['Agent status is owned by the execution host.']
+    items[0].knowledge.handoff = [
+      {
+        kind: 'decision',
+        text: 'Keep agent status in the execution host store.',
+        reliability: 'user-confirmed',
+        evidence: { kind: 'conversation', messageId: 'user-1' }
+      }
+    ]
 
     const graph = buildConversationKnowledgeGraph({ repos, worktrees, items })
 
@@ -26,6 +34,14 @@ describe('buildConversationKnowledgeGraph', () => {
       expect.objectContaining({
         id: 'statement:one:0',
         type: 'statement',
+        label: 'Keep agent status in the execution host store.',
+        sourceBacked: expect.objectContaining({ reliability: 'user-confirmed' })
+      })
+    )
+    expect(graph.nodes).toContainEqual(
+      expect.objectContaining({
+        id: 'candidate:one:0',
+        type: 'candidate',
         label: 'Agent status is owned by the execution host.'
       })
     )
@@ -41,8 +57,13 @@ describe('buildConversationKnowledgeGraph', () => {
     })
     expect(graph.edges).toContainEqual({
       source: 'digest:one',
-      target: 'statement:one:0',
+      target: 'candidate:one:0',
       relation: 'contains'
+    })
+    expect(graph.edges).toContainEqual({
+      source: 'digest:one',
+      target: 'statement:one:0',
+      relation: 'records'
     })
     expect(graph.edges).toContainEqual({
       source: 'digest:one',

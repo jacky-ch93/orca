@@ -84,14 +84,16 @@
       "workspace": "Workspace",
       "digest": "Conversation digest",
       "concept": "Concept",
-      "statement": "Knowledge candidate"
+      "candidate": "Knowledge candidate",
+      "statement": "Source-backed statement"
     },
     "relation": {
       "belongsTo": "belongs to",
       "occurredIn": "occurred in",
       "about": "about",
       "mentions": "mentions",
-      "contains": "contains"
+      "contains": "contains",
+      "records": "records"
     },
     "settings": {
       "description": "Adds a graph and detail workspace for exploring conversation digests, concepts, knowledge candidates, and their sources.",

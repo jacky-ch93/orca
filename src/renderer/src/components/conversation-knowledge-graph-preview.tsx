@@ -163,6 +163,11 @@ export function ConversationKnowledgeGraphPreview({
             <span className="mt-1 block text-[10px] capitalize text-muted-foreground">
               {conversationKnowledgeNodeTypeLabel(node.type)} · {node.itemCount}
             </span>
+            {node.sourceBacked ? (
+              <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                {conversationKnowledgeSourceStatusLabel(node.sourceBacked)}
+              </span>
+            ) : null}
             {node.item ? (
               <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
                 {node.item.knowledge.title ?? node.item.knowledge.summary}
@@ -185,8 +190,10 @@ function conversationKnowledgeNodeTypeLabel(type: ConversationKnowledgeGraphNode
       return translate('conversationKnowledge.nodeType.digest', 'Conversation digest')
     case 'concept':
       return translate('conversationKnowledge.nodeType.concept', 'Concept')
+    case 'candidate':
+      return translate('conversationKnowledge.nodeType.candidate', 'Knowledge candidate')
     case 'statement':
-      return translate('conversationKnowledge.nodeType.statement', 'Knowledge candidate')
+      return translate('conversationKnowledge.nodeType.statement', 'Source-backed statement')
   }
 }
 
@@ -202,7 +209,33 @@ function conversationKnowledgeEdgeLabel(relation: ConversationKnowledgeGraphRela
       return translate('conversationKnowledge.relation.mentions', 'mentions')
     case 'contains':
       return translate('conversationKnowledge.relation.contains', 'contains')
+    case 'records':
+      return translate('conversationKnowledge.relation.records', 'records')
   }
+}
+
+function conversationKnowledgeSourceStatusLabel(
+  sourceBacked: NonNullable<ConversationKnowledgeGraphNode['sourceBacked']>
+): string {
+  const reliability =
+    sourceBacked.reliability === 'user-confirmed'
+      ? translate('conversationKnowledge.detail.handoffUserConfirmed', 'User confirmed')
+      : sourceBacked.reliability === 'verified'
+        ? translate('conversationKnowledge.detail.handoffVerified', 'Verified')
+        : sourceBacked.reliability === 'inferred'
+          ? translate('conversationKnowledge.detail.handoffInferred', 'Inferred')
+          : translate('conversationKnowledge.detail.handoffProposal', 'Proposal')
+  const lifecycle = sourceBacked.lifecycle?.status
+  if (!lifecycle || lifecycle === 'active') {
+    return reliability
+  }
+  const lifecycleLabel =
+    lifecycle === 'superseded'
+      ? translate('conversationKnowledge.detail.handoffSuperseded', 'Superseded')
+      : lifecycle === 'conflicted'
+        ? translate('conversationKnowledge.detail.handoffConflicted', 'Conflicted')
+        : translate('conversationKnowledge.detail.handoffExpired', 'Expired')
+  return `${reliability} · ${lifecycleLabel}`
 }
 
 export function toggleFocusedNode(
@@ -270,6 +303,7 @@ function conversationKnowledgeGraphColumnPositions(
     workspace: GRAPH_SIDE_PADDING,
     digest,
     concept: knowledge,
+    candidate: knowledge,
     statement: knowledge
   }
 }

@@ -84,14 +84,16 @@
       "workspace": "工作区",
       "digest": "会话摘要",
       "concept": "概念",
-      "statement": "知识候选"
+      "candidate": "知识候选",
+      "statement": "有来源陈述"
     },
     "relation": {
       "belongsTo": "属于",
       "occurredIn": "发生于",
       "about": "关于",
       "mentions": "提及",
-      "contains": "包含"
+      "contains": "包含",
+      "records": "记录"
     },
     "settings": {
       "description": "添加图谱和详情工作区，用于浏览会话摘要、概念、知识候选及其来源。",

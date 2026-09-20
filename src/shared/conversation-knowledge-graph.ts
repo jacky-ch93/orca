@@ -1,14 +1,18 @@
-import type { ConversationKnowledgeItem } from './conversation-knowledge-items'
+import type {
+  ConversationKnowledgeHandoffEntry,
+  ConversationKnowledgeItem
+} from './conversation-knowledge-items'
 import type { Repo } from './repo-types'
 import type { Worktree } from './worktree/types'
 
 export type ConversationKnowledgeGraphNode = {
   id: string
-  type: 'project' | 'workspace' | 'digest' | 'concept' | 'statement'
+  type: 'project' | 'workspace' | 'digest' | 'concept' | 'candidate' | 'statement'
   label: string
   itemCount: number
   relevance?: number
   item?: ConversationKnowledgeItem
+  sourceBacked?: Pick<ConversationKnowledgeHandoffEntry, 'kind' | 'reliability' | 'lifecycle'>
 }
 
 export type ConversationKnowledgeGraphRelation =
@@ -17,6 +21,7 @@ export type ConversationKnowledgeGraphRelation =
   | 'about'
   | 'mentions'
   | 'contains'
+  | 'records'
 
 export type ConversationKnowledgeGraphEdge = {
   source: string
@@ -57,7 +62,8 @@ export function buildConversationKnowledgeGraph({
     for (const entity of item.knowledge.entities) {
       connectConceptNode(nodes, edges, countedNodeItems, entity, digestId, 'mentions')
     }
-    connectStatementNodes(nodes, edges, item, digestId)
+    connectCandidateNodes(nodes, edges, item, digestId)
+    connectSourceBackedStatementNodes(nodes, edges, item, digestId)
 
     const worktree = longestPathMatch(item.source.cwd, worktrees)
     const repo = worktree
@@ -98,7 +104,7 @@ function connectConceptNode(
   addEdge(edges, digestId, id, relation)
 }
 
-function connectStatementNodes(
+function connectCandidateNodes(
   nodes: Map<string, ConversationKnowledgeGraphNode>,
   edges: Map<string, ConversationKnowledgeGraphEdge>,
   item: ConversationKnowledgeItem,
@@ -112,15 +118,43 @@ function connectStatementNodes(
       continue
     }
     seen.add(normalized)
+    const candidateId = `candidate:${item.id}:${index}`
+    nodes.set(candidateId, {
+      id: candidateId,
+      type: 'candidate',
+      label,
+      itemCount: 1,
+      item
+    })
+    addEdge(edges, digestId, candidateId, 'contains')
+  }
+}
+
+function connectSourceBackedStatementNodes(
+  nodes: Map<string, ConversationKnowledgeGraphNode>,
+  edges: Map<string, ConversationKnowledgeGraphEdge>,
+  item: ConversationKnowledgeItem,
+  digestId: string
+): void {
+  for (const [index, entry] of (item.knowledge.handoff ?? []).entries()) {
+    const label = normalizeKnowledgeLabel(entry.text)
+    if (!label) {
+      continue
+    }
     const statementId = `statement:${item.id}:${index}`
     nodes.set(statementId, {
       id: statementId,
       type: 'statement',
       label,
       itemCount: 1,
-      item
+      item,
+      sourceBacked: {
+        kind: entry.kind,
+        reliability: entry.reliability,
+        lifecycle: entry.lifecycle
+      }
     })
-    addEdge(edges, digestId, statementId, 'contains')
+    addEdge(edges, digestId, statementId, 'records')
   }
 }
 
