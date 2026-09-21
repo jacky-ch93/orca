@@ -9,6 +9,7 @@ import {
 
 export type ConversationKnowledgeRelation = {
   id: string
+  kind: 'claim' | 'statement'
   subject: string
   relation: string
   object: string
@@ -36,6 +37,15 @@ export function buildConversationKnowledgeRelations(
   for (const match of matches) {
     const claim = match.entry.claim
     if (!claim) {
+      const id = `statement:${match.item.id}:${match.entry.evidence.messageId}`
+      relations.set(id, {
+        id,
+        kind: 'statement',
+        subject: match.item.knowledge.title ?? match.item.source.title,
+        relation: 'records',
+        object: match.entry.text,
+        assertions: [match]
+      })
       continue
     }
     const id = relationKey(claim)
@@ -45,6 +55,7 @@ export function buildConversationKnowledgeRelations(
     } else {
       relations.set(id, {
         id,
+        kind: 'claim',
         subject: claim.subject,
         relation: claim.relation,
         object: claim.object,

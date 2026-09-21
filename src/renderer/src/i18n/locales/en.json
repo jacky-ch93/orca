@@ -47,9 +47,11 @@
       "relations": "Source-backed"
     },
     "relations": {
-      "title": "Source-backed relationships",
-      "empty": "No source-backed relationships yet. Regenerate knowledge to extract them.",
-      "clearFocus": "Show all"
+      "title": "Source-backed statements and relationships",
+      "empty": "No source-backed statements or relationships yet. Regenerate knowledge to extract them.",
+      "clearFocus": "Show all",
+      "structuredClaim": "Structured claim",
+      "sourceBackedStatement": "Source-backed statement"
     },
     "generateAll": "Generate all",
     "generateUpdates": "Generate updates",

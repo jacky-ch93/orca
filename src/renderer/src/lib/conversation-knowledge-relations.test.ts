@@ -74,4 +74,25 @@ describe('buildConversationKnowledgeRelations', () => {
     expect(buildConversationKnowledgeRelations(items.slice(0, 1), 'object:Claude')).toHaveLength(1)
     expect(buildConversationKnowledgeRelations(items.slice(0, 1), 'object:Codex')).toEqual([])
   })
+
+  it('keeps source-backed statements that cannot safely form a triple', () => {
+    const sourceBacked = item('statement', 'codex', 'Claude')
+    sourceBacked.knowledge.handoff = [
+      {
+        kind: 'constraint',
+        text: 'Preserve source evidence before promoting a candidate.',
+        reliability: 'user-confirmed',
+        evidence: { kind: 'conversation', messageId: 'message-statement' }
+      }
+    ]
+
+    expect(buildConversationKnowledgeRelations([sourceBacked], '')).toEqual([
+      expect.objectContaining({
+        kind: 'statement',
+        subject: 'statement',
+        relation: 'records',
+        object: 'Preserve source evidence before promoting a candidate.'
+      })
+    ])
+  })
 })

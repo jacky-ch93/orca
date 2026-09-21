@@ -36,12 +36,14 @@
     "graphMode": {
       "ariaLabel": "图谱视图",
       "topics": "图谱",
-      "relations": "有来源关系"
+      "relations": "有来源陈述"
     },
     "relations": {
-      "title": "有来源的语义关系",
-      "empty": "暂无有来源的语义关系。重新生成知识以提取关系。",
-      "clearFocus": "显示全部"
+      "title": "有来源陈述与语义关系",
+      "empty": "暂无有来源陈述或语义关系。重新生成知识以提取它们。",
+      "clearFocus": "显示全部",
+      "structuredClaim": "结构化关系",
+      "sourceBackedStatement": "有来源陈述"
     },
     "generateAll": "生成全部",
     "generateUpdates": "生成更新",

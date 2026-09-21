@@ -9,6 +9,7 @@ describe('ConversationKnowledgeRelationGraph', () => {
   it('shows a directional relation and its separately attributed evidence', () => {
     const relation: ConversationKnowledgeRelation = {
       id: 'orca-summary-agent-claude',
+      kind: 'claim',
       subject: 'Orca',
       relation: 'summary-agent',
       object: 'Claude',

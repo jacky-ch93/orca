@@ -33,7 +33,7 @@ export function ConversationKnowledgeRelationGraph({
       <div className="flex h-full min-h-52 items-center justify-center rounded-lg border border-border/60 bg-muted/15 px-6 text-center text-sm text-muted-foreground">
         {translate(
           'conversationKnowledge.relations.empty',
-          'No source-backed relationships yet. Regenerate knowledge to extract them.'
+          'No source-backed statements or relationships yet. Regenerate knowledge to extract them.'
         )}
       </div>
     )
@@ -43,8 +43,11 @@ export function ConversationKnowledgeRelationGraph({
     <div className="scrollbar-sleek h-full min-h-0 overflow-y-auto rounded-lg border border-border/60 bg-muted/15 p-3">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-xs font-medium">
-          {translate('conversationKnowledge.relations.title', 'Source-backed relationships')} ·{' '}
-          {visible.length}
+          {translate(
+            'conversationKnowledge.relations.title',
+            'Source-backed statements and relationships'
+          )}{' '}
+          · {visible.length}
         </h2>
         {focusedConcept ? (
           <Button variant="ghost" size="xs" onClick={() => setFocusedConcept(null)}>
@@ -77,6 +80,14 @@ export function ConversationKnowledgeRelationGraph({
                 <span className="truncate">{relation.object}</span>
               </Button>
             </div>
+            <Badge className="mt-1" variant={relation.kind === 'claim' ? 'outline' : 'secondary'}>
+              {relation.kind === 'claim'
+                ? translate('conversationKnowledge.relations.structuredClaim', 'Structured claim')
+                : translate(
+                    'conversationKnowledge.relations.sourceBackedStatement',
+                    'Source-backed statement'
+                  )}
+            </Badge>
             <div className="mt-1 border-t border-border pt-1">
               {relation.assertions.map((assertion) => (
                 <Button
