@@ -8,12 +8,14 @@ import type {
 } from '../../../shared/conversation-knowledge-graph'
 import type { ConversationKnowledgeItem } from '../../../shared/conversation-knowledge-items'
 
-type PositionedNode = ConversationKnowledgeGraphNode & { x: number; y: number }
+type PositionedNode = ConversationKnowledgeGraphNode & { height: number; x: number; y: number }
 type FocusedNode = { id: string; viewMode: 'all' | 'project'; projectId: string | null }
 
 const MAX_NODE_WIDTH = 176
 const MIN_NODE_WIDTH = 128
-const NODE_HEIGHT = 64
+const NODE_MIN_HEIGHT = 64
+const NODE_DETAIL_LINE_HEIGHT = 16
+const NODE_VERTICAL_GAP = 18
 const GRAPH_SIDE_PADDING = 18
 const GRAPH_MIN_WIDTH = 580
 
@@ -56,7 +58,7 @@ export function ConversationKnowledgeGraphPreview({
     [canvasWidth, nodeWidth, visibleGraph]
   )
   const positionById = useMemo(() => new Map(positions.map((node) => [node.id, node])), [positions])
-  const height = Math.max(240, ...positions.map((node) => node.y + NODE_HEIGHT + 18))
+  const height = Math.max(240, ...positions.map((node) => node.y + node.height + NODE_VERTICAL_GAP))
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -114,9 +116,9 @@ export function ConversationKnowledgeGraphPreview({
             }
             const leftToRight = source.x <= target.x
             const startX = leftToRight ? source.x + nodeWidth : source.x
-            const startY = source.y + NODE_HEIGHT / 2
+            const startY = source.y + source.height / 2
             const endX = leftToRight ? target.x : target.x + nodeWidth
-            const endY = target.y + NODE_HEIGHT / 2
+            const endY = target.y + target.height / 2
             const bend = Math.max(32, Math.abs(endX - startX) * 0.42)
             const direction = leftToRight ? 1 : -1
             return (
@@ -165,7 +167,7 @@ export function ConversationKnowledgeGraphPreview({
               }
             }}
             className="absolute rounded-xl border border-border/70 bg-background/95 px-3 py-2 text-left shadow-xs outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[current=true]:border-foreground/40 data-[current=true]:bg-accent"
-            style={{ left: node.x, top: node.y, width: nodeWidth, minHeight: NODE_HEIGHT }}
+            style={{ height: node.height, left: node.x, top: node.y, width: nodeWidth }}
           >
             <span className="block truncate text-xs font-medium">{node.label}</span>
             <span className="mt-1 block text-[10px] capitalize text-muted-foreground">
@@ -295,14 +297,24 @@ export function positionConversationKnowledgeGraphNodes(
       right.itemCount - left.itemCount ||
       left.label.localeCompare(right.label)
   )
+  const nextYByColumn = new Map<number, number>()
   return ordered.map((node) => {
-    const peers = ordered.filter((peer) => columnX[peer.type] === columnX[node.type])
+    const x = columnX[node.type]
+    const height = conversationKnowledgeGraphNodeHeight(node)
+    const y = nextYByColumn.get(x) ?? NODE_VERTICAL_GAP
+    nextYByColumn.set(x, y + height + NODE_VERTICAL_GAP)
     return {
       ...node,
-      x: columnX[node.type],
-      y: 18 + peers.findIndex((peer) => peer.id === node.id) * 82
+      height,
+      x,
+      y
     }
   })
+}
+
+function conversationKnowledgeGraphNodeHeight(node: ConversationKnowledgeGraphNode): number {
+  const detailLines = Number(Boolean(node.sourceBacked)) + Number(Boolean(node.item))
+  return NODE_MIN_HEIGHT + detailLines * NODE_DETAIL_LINE_HEIGHT
 }
 
 export function conversationKnowledgeGraphNodeWidth(

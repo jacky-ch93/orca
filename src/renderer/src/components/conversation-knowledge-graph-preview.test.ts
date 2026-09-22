@@ -81,4 +81,34 @@ describe('focusConversationKnowledgeGraph', () => {
       )?.x
     ).toBe(434)
   })
+
+  it('stacks detailed nodes with their rendered height accounted for', () => {
+    const graphWithStatements: ConversationKnowledgeGraph = {
+      nodes: [
+        {
+          id: 'statement:one',
+          type: 'statement',
+          label: 'One',
+          itemCount: 1,
+          sourceBacked: { kind: 'decision', reliability: 'verified' }
+        },
+        {
+          id: 'statement:two',
+          type: 'statement',
+          label: 'Two',
+          itemCount: 1,
+          sourceBacked: { kind: 'decision', reliability: 'verified' }
+        }
+      ],
+      edges: []
+    }
+
+    const positions = positionConversationKnowledgeGraphNodes(graphWithStatements, 630)
+
+    expect(positions.find((node) => node.id === 'statement:one')).toMatchObject({
+      height: 80,
+      y: 18
+    })
+    expect(positions.find((node) => node.id === 'statement:two')).toMatchObject({ y: 116 })
+  })
 })
