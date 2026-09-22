@@ -136,7 +136,8 @@ function isHandoffEntry(value: unknown): boolean {
       (Array.isArray(evidenceRecord.supportingMessageIds) &&
         evidenceRecord.supportingMessageIds.every((messageId) => typeof messageId === 'string'))) &&
     (record.lifecycle === undefined || isLifecycle(record.lifecycle)) &&
-    (record.claim === undefined || isClaim(record.claim))
+    (record.claim === undefined || isClaim(record.claim)) &&
+    (record.knowledge === undefined || isKnowledge(record.knowledge))
   )
 }
 
@@ -160,6 +161,20 @@ function isClaim(value: unknown): boolean {
     typeof record.relation === 'string' &&
     typeof record.object === 'string' &&
     record.cardinality === 'single'
+  )
+}
+
+function isKnowledge(value: unknown): boolean {
+  const record = toRecord(value)
+  return (
+    record !== null &&
+    (record.kind === 'fact' ||
+      record.kind === 'method' ||
+      record.kind === 'finding' ||
+      record.kind === 'decision' ||
+      record.kind === 'constraint') &&
+    typeof record.applicability === 'string' &&
+    record.reusable === true
   )
 }
 

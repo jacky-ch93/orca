@@ -17,17 +17,18 @@ export function retainSourceBackedHandoff(
       messagesById.get(messageId)
     )
     if (
-      entry.reliability !== 'user-confirmed' ||
-      entry.evidence.kind !== 'conversation' ||
-      message?.role !== 'user' ||
-      supportingMessages.some((supportingMessage) => supportingMessage?.role !== 'user')
+      !isSourceBacked(
+        entry,
+        message?.role,
+        supportingMessages.map((message) => message?.role)
+      )
     ) {
       return []
     }
     if (!entry.claim) {
       return [entry]
     }
-    const text = message.text?.normalize('NFKC').toLocaleLowerCase() ?? ''
+    const text = message?.text?.normalize('NFKC').toLocaleLowerCase() ?? ''
     const subject = entry.claim.subject.normalize('NFKC').toLocaleLowerCase()
     const object = entry.claim.object.normalize('NFKC').toLocaleLowerCase()
     return [
@@ -36,6 +37,22 @@ export function retainSourceBackedHandoff(
         : { ...entry, claim: undefined }
     ]
   })
+}
+
+function isSourceBacked(
+  entry: ConversationKnowledgeHandoffEntry,
+  evidenceRole: string | undefined,
+  supportingRoles: readonly (string | undefined)[]
+): boolean {
+  if (entry.reliability === 'verified') {
+    return entry.evidence.kind === 'tool-result' && evidenceRole !== undefined
+  }
+  return (
+    entry.reliability === 'user-confirmed' &&
+    entry.evidence.kind === 'conversation' &&
+    evidenceRole === 'user' &&
+    supportingRoles.every((role) => role === 'user')
+  )
 }
 
 function isSpecificClaim(entry: ConversationKnowledgeHandoffEntry): boolean {
@@ -78,6 +95,15 @@ function normalizeEntry(
             cardinality: 'single' as const
           }
         }
+      : {}),
+    ...(entry.knowledge
+      ? {
+          knowledge: {
+            kind: entry.knowledge.kind,
+            applicability: entry.knowledge.applicability.trim().slice(0, 240),
+            reusable: true as const
+          }
+        }
       : {})
   }
 }
@@ -104,7 +130,26 @@ function isHandoffEntry(value: unknown): value is ConversationKnowledgeHandoffEn
     (evidenceRecord.supportingMessageIds === undefined ||
       (Array.isArray(evidenceRecord.supportingMessageIds) &&
         evidenceRecord.supportingMessageIds.every((messageId) => typeof messageId === 'string'))) &&
-    isOptionalClaim(record.claim)
+    isOptionalClaim(record.claim) &&
+    isOptionalKnowledge(record.knowledge)
+  )
+}
+
+function isOptionalKnowledge(value: unknown): boolean {
+  if (value === undefined) {
+    return true
+  }
+  const knowledge = toRecord(value)
+  return (
+    knowledge !== null &&
+    (knowledge.kind === 'fact' ||
+      knowledge.kind === 'method' ||
+      knowledge.kind === 'finding' ||
+      knowledge.kind === 'decision' ||
+      knowledge.kind === 'constraint') &&
+    typeof knowledge.applicability === 'string' &&
+    knowledge.applicability.trim().length > 0 &&
+    knowledge.reusable === true
   )
 }
 

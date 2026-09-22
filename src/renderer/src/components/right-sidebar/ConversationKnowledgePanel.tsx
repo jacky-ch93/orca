@@ -32,6 +32,7 @@ import type {
 import { useTranslation } from 'react-i18next'
 import { ConversationKnowledgeDetail } from './ConversationKnowledgeDetail'
 import { ConversationKnowledgeConceptDetail } from './ConversationKnowledgeConceptDetail'
+import { ConversationKnowledgeNoteDetail } from './ConversationKnowledgeNoteDetail'
 import { ConversationKnowledgeClaimResults } from './ConversationKnowledgeClaimResults'
 import { ConversationKnowledgeRelationGraph } from './ConversationKnowledgeRelationGraph'
 import { ConversationKnowledgeIndexProgress } from './ConversationKnowledgeIndexProgress'
@@ -65,6 +66,7 @@ export default function ConversationKnowledgePanel({
   const [items, setItems] = useState<ConversationKnowledgeItem[]>([])
   const [selected, setSelected] = useState<ConversationKnowledgeItem | null>(null)
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null)
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
   const [status, setStatus] = useState<ConversationKnowledgeIndexStatus>(IDLE_STATUS)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -116,6 +118,8 @@ export default function ConversationKnowledgePanel({
   const selectedConcept =
     visibleGraph.nodes.find((node) => node.id === selectedConceptId && node.type === 'concept') ??
     null
+  const selectedNote =
+    visibleGraph.nodes.find((node) => node.id === selectedNoteId && node.type === 'note') ?? null
 
   const refreshKnowledge = useCallback(async () => {
     try {
@@ -210,6 +214,7 @@ export default function ConversationKnowledgePanel({
     selectConversationKnowledgeItem(item)
     setSelected(item)
     setSelectedConceptId(null)
+    setSelectedNoteId(null)
     setHighlightEvidenceId(null)
   }
 
@@ -342,9 +347,10 @@ export default function ConversationKnowledgePanel({
                   graph={visibleGraph}
                   selectedItemId={visibleSelected?.id}
                   onSelectItem={chooseItem}
-                  onSelectNode={(node) =>
+                  onSelectNode={(node) => {
                     setSelectedConceptId(node.type === 'concept' ? node.id : null)
-                  }
+                    setSelectedNoteId(node.type === 'note' ? node.id : null)
+                  }}
                   viewMode={viewMode}
                   projectId={activeProjectId}
                   emptyMessage={
@@ -363,7 +369,13 @@ export default function ConversationKnowledgePanel({
             </div>
           </div>
           <ScrollArea className="min-h-0 min-w-0">
-            {selectedConcept ? (
+            {selectedNote ? (
+              <ConversationKnowledgeNoteDetail
+                note={selectedNote}
+                graph={visibleGraph}
+                onSelectItem={chooseItem}
+              />
+            ) : selectedConcept ? (
               <ConversationKnowledgeConceptDetail
                 concept={selectedConcept}
                 graph={visibleGraph}

@@ -47,8 +47,8 @@ describe('focusConversationKnowledgeGraph', () => {
     const narrowKnowledge = narrow.find((node) => node.id === 'concept:git')
     const wideKnowledge = wide.find((node) => node.id === 'concept:git')
 
-    expect(narrowKnowledge?.x).toBe(436)
-    expect(wideKnowledge?.x).toBe(706)
-    expect(wide.find((node) => node.id === 'digest:one')?.x).toBe(362)
+    expect(narrowKnowledge?.x).toBe(402)
+    expect(wideKnowledge?.x).toBe(477)
+    expect(wide.find((node) => node.id === 'digest:one')?.x).toBe(241)
   })
 })

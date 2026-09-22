@@ -87,7 +87,8 @@
       "digest": "会话摘要",
       "concept": "概念",
       "candidate": "知识候选",
-      "statement": "有来源陈述"
+      "statement": "有来源陈述",
+      "note": "知识笔记"
     },
     "relation": {
       "belongsTo": "属于",
@@ -95,7 +96,15 @@
       "about": "关于",
       "mentions": "提及",
       "contains": "包含",
-      "records": "记录"
+      "records": "记录",
+      "organizes": "整理为",
+      "supports": "支持"
+    },
+    "note": {
+      "eyebrow": "知识笔记",
+      "supported": "已支持",
+      "verified": "已验证",
+      "evidence": "支持证据"
     },
     "conceptOverview": {
       "eyebrow": "概念概览",

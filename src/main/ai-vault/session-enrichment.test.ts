@@ -68,6 +68,51 @@ describe('parseConversationKnowledgeOutput', () => {
     )
   })
 
+  it('retains a reusable knowledge classification with its applicability', () => {
+    expect(
+      parseConversationKnowledgeOutput(
+        JSON.stringify({
+          summary: 'Use source-backed evidence before promoting knowledge.',
+          topics: ['Knowledge'],
+          conclusions: [],
+          entities: [],
+          handoff: [
+            {
+              kind: 'constraint',
+              text: 'Preserve source evidence before promoting a candidate.',
+              reliability: 'user-confirmed',
+              evidence: { kind: 'conversation', messageId: 'user-1' },
+              knowledge: {
+                kind: 'constraint',
+                applicability: 'When converting conversation material into knowledge notes.',
+                reusable: true
+              }
+            }
+          ]
+        })
+      ).handoff[0]?.knowledge
+    ).toEqual({
+      kind: 'constraint',
+      applicability: 'When converting conversation material into knowledge notes.',
+      reusable: true
+    })
+  })
+
+  it('retains verified tool-result evidence for reusable findings', () => {
+    const entry = {
+      kind: 'progress' as const,
+      text: 'The targeted test passed.',
+      reliability: 'verified' as const,
+      evidence: { kind: 'tool-result' as const, messageId: 'tool-1' },
+      knowledge: {
+        kind: 'finding' as const,
+        applicability: 'Before merging this change.',
+        reusable: true as const
+      }
+    }
+    expect(retainSourceBackedHandoff([entry], [{ id: 'tool-1', role: 'tool' }])).toEqual([entry])
+  })
+
   it('rejects a user-confirmed handoff when its evidence is not a user message', () => {
     expect(
       retainSourceBackedHandoff(

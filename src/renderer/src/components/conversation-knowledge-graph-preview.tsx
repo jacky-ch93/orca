@@ -14,7 +14,7 @@ type FocusedNode = { id: string; viewMode: 'all' | 'project'; projectId: string 
 const NODE_WIDTH = 176
 const NODE_HEIGHT = 64
 const GRAPH_SIDE_PADDING = 18
-const GRAPH_MIN_WIDTH = 630
+const GRAPH_MIN_WIDTH = 840
 
 export function ConversationKnowledgeGraphPreview({
   graph,
@@ -197,6 +197,8 @@ function conversationKnowledgeNodeTypeLabel(type: ConversationKnowledgeGraphNode
       return translate('conversationKnowledge.nodeType.candidate', 'Knowledge candidate')
     case 'statement':
       return translate('conversationKnowledge.nodeType.statement', 'Source-backed statement')
+    case 'note':
+      return translate('conversationKnowledge.nodeType.note', 'Knowledge note')
   }
 }
 
@@ -214,6 +216,10 @@ function conversationKnowledgeEdgeLabel(relation: ConversationKnowledgeGraphRela
       return translate('conversationKnowledge.relation.contains', 'contains')
     case 'records':
       return translate('conversationKnowledge.relation.records', 'records')
+    case 'organizes':
+      return translate('conversationKnowledge.relation.organizes', 'organizes into')
+    case 'supports':
+      return translate('conversationKnowledge.relation.supports', 'supports')
   }
 }
 
@@ -296,17 +302,19 @@ export function positionConversationKnowledgeGraphNodes(
 function conversationKnowledgeGraphColumnPositions(
   canvasWidth: number
 ): Record<ConversationKnowledgeGraphNode['type'], number> {
-  const knowledge = Math.max(
-    GRAPH_SIDE_PADDING + NODE_WIDTH * 2 + 32,
+  const note = Math.max(
+    GRAPH_SIDE_PADDING + NODE_WIDTH * 3 + 48,
     canvasWidth - GRAPH_SIDE_PADDING - NODE_WIDTH
   )
-  const digest = Math.round((GRAPH_SIDE_PADDING + knowledge) / 2)
+  const digest = Math.round((GRAPH_SIDE_PADDING + note) / 3)
+  const concept = Math.round((GRAPH_SIDE_PADDING + note * 2) / 3)
   return {
     project: GRAPH_SIDE_PADDING,
     workspace: GRAPH_SIDE_PADDING,
     digest,
-    concept: knowledge,
-    candidate: knowledge,
-    statement: knowledge
+    concept,
+    candidate: concept,
+    statement: concept,
+    note
   }
 }

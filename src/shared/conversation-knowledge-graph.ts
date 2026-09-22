@@ -7,12 +7,22 @@ import type { Worktree } from './worktree/types'
 
 export type ConversationKnowledgeGraphNode = {
   id: string
-  type: 'project' | 'workspace' | 'digest' | 'concept' | 'candidate' | 'statement'
+  type: 'project' | 'workspace' | 'digest' | 'concept' | 'candidate' | 'statement' | 'note'
   label: string
   itemCount: number
   relevance?: number
   item?: ConversationKnowledgeItem
-  sourceBacked?: Pick<ConversationKnowledgeHandoffEntry, 'kind' | 'reliability' | 'lifecycle'>
+  sourceBacked?: Pick<
+    ConversationKnowledgeHandoffEntry,
+    'kind' | 'reliability' | 'lifecycle' | 'knowledge'
+  >
+  knowledgeNote?: {
+    conceptId: string
+    status: 'supported' | 'verified'
+    kind: NonNullable<ConversationKnowledgeHandoffEntry['knowledge']>['kind']
+    applicability: string
+    evidenceCount: number
+  }
 }
 
 export type ConversationKnowledgeGraphRelation =
@@ -22,6 +32,8 @@ export type ConversationKnowledgeGraphRelation =
   | 'mentions'
   | 'contains'
   | 'records'
+  | 'organizes'
+  | 'supports'
 
 export type ConversationKnowledgeGraphEdge = {
   source: string
@@ -80,7 +92,63 @@ export function buildConversationKnowledgeGraph({
       addEdge(edges, digestId, workspaceId, 'occurred-in')
     }
   }
+  connectKnowledgeNotes(nodes, edges)
   return { nodes: [...nodes.values()], edges: [...edges.values()] }
+}
+
+function connectKnowledgeNotes(
+  nodes: Map<string, ConversationKnowledgeGraphNode>,
+  edges: Map<string, ConversationKnowledgeGraphEdge>
+): void {
+  for (const concept of [...nodes.values()].filter((node) => node.type === 'concept')) {
+    const digestIds = new Set(
+      [...edges.values()]
+        .filter(
+          (edge) =>
+            edge.target === concept.id &&
+            (edge.relation === 'about' || edge.relation === 'mentions')
+        )
+        .map((edge) => edge.source)
+    )
+    const evidence = [...edges.values()]
+      .filter((edge) => digestIds.has(edge.source) && edge.relation === 'records')
+      .map((edge) => nodes.get(edge.target))
+      .filter(
+        (node): node is ConversationKnowledgeGraphNode =>
+          node?.type === 'statement' &&
+          node.sourceBacked?.knowledge !== undefined &&
+          isActiveSourceBackedKnowledge(node)
+      )
+    const knowledge = evidence[0]?.sourceBacked?.knowledge
+    if (!knowledge) {
+      continue
+    }
+    const noteId = `note:${concept.id}`
+    nodes.set(noteId, {
+      id: noteId,
+      type: 'note',
+      label: concept.label,
+      itemCount: evidence.length,
+      knowledgeNote: {
+        conceptId: concept.id,
+        status: evidence.some((node) => node.sourceBacked?.reliability === 'verified')
+          ? 'verified'
+          : 'supported',
+        kind: knowledge.kind,
+        applicability: knowledge.applicability,
+        evidenceCount: evidence.length
+      }
+    })
+    addEdge(edges, concept.id, noteId, 'organizes')
+    for (const statement of evidence) {
+      addEdge(edges, statement.id, noteId, 'supports')
+    }
+  }
+}
+
+function isActiveSourceBackedKnowledge(node: ConversationKnowledgeGraphNode): boolean {
+  const lifecycle = node.sourceBacked?.lifecycle?.status
+  return lifecycle === undefined || lifecycle === 'active'
 }
 
 function connectConceptNode(
@@ -151,7 +219,8 @@ function connectSourceBackedStatementNodes(
       sourceBacked: {
         kind: entry.kind,
         reliability: entry.reliability,
-        lifecycle: entry.lifecycle
+        lifecycle: entry.lifecycle,
+        knowledge: entry.knowledge
       }
     })
     addEdge(edges, digestId, statementId, 'records')

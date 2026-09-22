@@ -87,7 +87,8 @@
       "digest": "Conversation digest",
       "concept": "Concept",
       "candidate": "Knowledge candidate",
-      "statement": "Source-backed statement"
+      "statement": "Source-backed statement",
+      "note": "Knowledge note"
     },
     "relation": {
       "belongsTo": "belongs to",
@@ -95,7 +96,15 @@
       "about": "about",
       "mentions": "mentions",
       "contains": "contains",
-      "records": "records"
+      "records": "records",
+      "organizes": "organizes into",
+      "supports": "supports"
+    },
+    "note": {
+      "eyebrow": "Knowledge note",
+      "supported": "Supported",
+      "verified": "Verified",
+      "evidence": "Supporting evidence"
     },
     "conceptOverview": {
       "eyebrow": "Concept overview",

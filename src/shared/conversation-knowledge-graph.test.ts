@@ -21,7 +21,12 @@ describe('buildConversationKnowledgeGraph', () => {
         kind: 'decision',
         text: 'Keep agent status in the execution host store.',
         reliability: 'user-confirmed',
-        evidence: { kind: 'conversation', messageId: 'user-1' }
+        evidence: { kind: 'conversation', messageId: 'user-1' },
+        knowledge: {
+          kind: 'constraint',
+          applicability: 'When reporting agent status across execution hosts.',
+          reusable: true
+        }
       }
     ]
 
@@ -29,6 +34,13 @@ describe('buildConversationKnowledgeGraph', () => {
 
     expect(graph.nodes).toContainEqual(
       expect.objectContaining({ id: 'concept:ssh', type: 'concept', label: 'SSH', itemCount: 2 })
+    )
+    expect(graph.nodes).toContainEqual(
+      expect.objectContaining({
+        id: 'note:concept:ssh',
+        type: 'note',
+        knowledgeNote: expect.objectContaining({ status: 'supported', kind: 'constraint' })
+      })
     )
     expect(graph.nodes).toContainEqual(
       expect.objectContaining({
@@ -64,6 +76,16 @@ describe('buildConversationKnowledgeGraph', () => {
       source: 'digest:one',
       target: 'statement:one:0',
       relation: 'records'
+    })
+    expect(graph.edges).toContainEqual({
+      source: 'concept:ssh',
+      target: 'note:concept:ssh',
+      relation: 'organizes'
+    })
+    expect(graph.edges).toContainEqual({
+      source: 'statement:one:0',
+      target: 'note:concept:ssh',
+      relation: 'supports'
     })
     expect(graph.edges).toContainEqual({
       source: 'digest:one',
