@@ -20,6 +20,7 @@ import {
   scopeConversationKnowledgeGraphToProject,
   searchConversationKnowledgeGraph
 } from '@/lib/conversation-knowledge-graph-filter'
+import { overviewConversationKnowledgeGraph } from '@/lib/conversation-knowledge-graph-overview'
 import {
   readConversationKnowledgeViewMode,
   writeConversationKnowledgeViewMode,
@@ -112,6 +113,10 @@ export default function ConversationKnowledgePanel({
   const visibleItems = useMemo(
     () => conversationKnowledgeItemsInGraph(visibleGraph),
     [visibleGraph]
+  )
+  const previewGraph = useMemo(
+    () => (searchQuery.trim() ? visibleGraph : overviewConversationKnowledgeGraph(visibleGraph)),
+    [searchQuery, visibleGraph]
   )
   const visibleSelected =
     visibleItems.find((item) => item.id === selected?.id) ?? visibleItems[0] ?? null
@@ -344,7 +349,7 @@ export default function ConversationKnowledgePanel({
                 <ConversationKnowledgeRelationGraph relations={relations} onSelect={chooseClaim} />
               ) : (
                 <ConversationKnowledgeGraphPreview
-                  graph={visibleGraph}
+                  graph={previewGraph}
                   selectedItemId={visibleSelected?.id}
                   onSelectItem={chooseItem}
                   onSelectNode={(node) => {

@@ -11,10 +11,11 @@ import type { ConversationKnowledgeItem } from '../../../shared/conversation-kno
 type PositionedNode = ConversationKnowledgeGraphNode & { x: number; y: number }
 type FocusedNode = { id: string; viewMode: 'all' | 'project'; projectId: string | null }
 
-const NODE_WIDTH = 176
+const MAX_NODE_WIDTH = 176
+const MIN_NODE_WIDTH = 128
 const NODE_HEIGHT = 64
 const GRAPH_SIDE_PADDING = 18
-const GRAPH_MIN_WIDTH = 840
+const GRAPH_MIN_WIDTH = 580
 
 export function ConversationKnowledgeGraphPreview({
   graph,
@@ -46,9 +47,13 @@ export function ConversationKnowledgeGraphPreview({
     [graph, focusedNodeId]
   )
   const canvasWidth = Math.max(GRAPH_MIN_WIDTH, viewportWidth)
-  const positions = useMemo(
-    () => positionConversationKnowledgeGraphNodes(visibleGraph, canvasWidth),
+  const nodeWidth = useMemo(
+    () => conversationKnowledgeGraphNodeWidth(visibleGraph, canvasWidth),
     [canvasWidth, visibleGraph]
+  )
+  const positions = useMemo(
+    () => positionConversationKnowledgeGraphNodes(visibleGraph, canvasWidth, nodeWidth),
+    [canvasWidth, nodeWidth, visibleGraph]
   )
   const positionById = useMemo(() => new Map(positions.map((node) => [node.id, node])), [positions])
   const height = Math.max(240, ...positions.map((node) => node.y + NODE_HEIGHT + 18))
@@ -108,9 +113,9 @@ export function ConversationKnowledgeGraphPreview({
               return null
             }
             const leftToRight = source.x <= target.x
-            const startX = leftToRight ? source.x + NODE_WIDTH : source.x
+            const startX = leftToRight ? source.x + nodeWidth : source.x
             const startY = source.y + NODE_HEIGHT / 2
-            const endX = leftToRight ? target.x : target.x + NODE_WIDTH
+            const endX = leftToRight ? target.x : target.x + nodeWidth
             const endY = target.y + NODE_HEIGHT / 2
             const bend = Math.max(32, Math.abs(endX - startX) * 0.42)
             const direction = leftToRight ? 1 : -1
@@ -160,7 +165,7 @@ export function ConversationKnowledgeGraphPreview({
               }
             }}
             className="absolute rounded-xl border border-border/70 bg-background/95 px-3 py-2 text-left shadow-xs outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[current=true]:border-foreground/40 data-[current=true]:bg-accent"
-            style={{ left: node.x, top: node.y, width: NODE_WIDTH, minHeight: NODE_HEIGHT }}
+            style={{ left: node.x, top: node.y, width: nodeWidth, minHeight: NODE_HEIGHT }}
           >
             <span className="block truncate text-xs font-medium">{node.label}</span>
             <span className="mt-1 block text-[10px] capitalize text-muted-foreground">
@@ -279,9 +284,10 @@ export function focusConversationKnowledgeGraph(
 
 export function positionConversationKnowledgeGraphNodes(
   graph: ConversationKnowledgeGraph,
-  canvasWidth: number
+  canvasWidth: number,
+  nodeWidth = conversationKnowledgeGraphNodeWidth(graph, canvasWidth)
 ): PositionedNode[] {
-  const columnX = conversationKnowledgeGraphColumnPositions(canvasWidth)
+  const columnX = conversationKnowledgeGraphColumnPositions(graph, canvasWidth, nodeWidth)
   const ordered = [...graph.nodes].sort(
     (left, right) =>
       columnX[left.type] - columnX[right.type] ||
@@ -299,15 +305,30 @@ export function positionConversationKnowledgeGraphNodes(
   })
 }
 
-function conversationKnowledgeGraphColumnPositions(
+export function conversationKnowledgeGraphNodeWidth(
+  graph: ConversationKnowledgeGraph,
   canvasWidth: number
-): Record<ConversationKnowledgeGraphNode['type'], number> {
-  const note = Math.max(
-    GRAPH_SIDE_PADDING + NODE_WIDTH * 3 + 48,
-    canvasWidth - GRAPH_SIDE_PADDING - NODE_WIDTH
+): number {
+  const columnCount = graph.nodes.some((node) => node.type === 'note') ? 4 : 3
+  const gap = 10
+  return Math.min(
+    MAX_NODE_WIDTH,
+    Math.max(
+      MIN_NODE_WIDTH,
+      Math.floor((canvasWidth - GRAPH_SIDE_PADDING * 2 - gap * (columnCount - 1)) / columnCount)
+    )
   )
-  const digest = Math.round((GRAPH_SIDE_PADDING + note) / 3)
-  const concept = Math.round((GRAPH_SIDE_PADDING + note * 2) / 3)
+}
+
+function conversationKnowledgeGraphColumnPositions(
+  graph: ConversationKnowledgeGraph,
+  canvasWidth: number,
+  nodeWidth: number
+): Record<ConversationKnowledgeGraphNode['type'], number> {
+  const hasNotes = graph.nodes.some((node) => node.type === 'note')
+  const lastColumn = canvasWidth - GRAPH_SIDE_PADDING - nodeWidth
+  const digest = Math.round((GRAPH_SIDE_PADDING + lastColumn) / (hasNotes ? 3 : 2))
+  const concept = hasNotes ? Math.round((GRAPH_SIDE_PADDING + lastColumn * 2) / 3) : lastColumn
   return {
     project: GRAPH_SIDE_PADDING,
     workspace: GRAPH_SIDE_PADDING,
@@ -315,6 +336,6 @@ function conversationKnowledgeGraphColumnPositions(
     concept,
     candidate: concept,
     statement: concept,
-    note
+    note: lastColumn
   }
 }

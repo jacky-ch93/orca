@@ -6,6 +6,7 @@ import {
   scopeConversationKnowledgeGraphToProject,
   searchConversationKnowledgeGraph
 } from './conversation-knowledge-graph-filter'
+import { overviewConversationKnowledgeGraph } from './conversation-knowledge-graph-overview'
 
 const item = (
   id: string,
@@ -134,6 +135,29 @@ describe('conversation knowledge graph filters', () => {
       'relation:summary-agent object:Codex'
     )
     expect(conversationKnowledgeItemsInGraph(result).map((entry) => entry.id)).toEqual(['claimed'])
+  })
+
+  it('keeps the overview bounded while retaining its context and evidence', () => {
+    const nodes: ConversationKnowledgeGraph['nodes'] = []
+    const edges: ConversationKnowledgeGraph['edges'] = []
+    for (let index = 0; index < 24; index += 1) {
+      const conceptId = `concept:${index}`
+      const digestId = `digest:${index}`
+      nodes.push({
+        id: conceptId,
+        type: 'concept',
+        label: `Concept ${index}`,
+        itemCount: 24 - index
+      })
+      nodes.push({ id: digestId, type: 'digest', label: `Digest ${index}`, itemCount: 1 })
+      edges.push({ source: digestId, target: conceptId, relation: 'about' })
+    }
+
+    const overview = overviewConversationKnowledgeGraph({ nodes, edges })
+
+    expect(overview.nodes.filter((node) => node.type === 'concept')).toHaveLength(18)
+    expect(overview.nodes.filter((node) => node.type === 'digest')).toHaveLength(18)
+    expect(overview.edges).toHaveLength(18)
   })
 
   it('filters source-backed statements by reliability, kind, and lifecycle', () => {

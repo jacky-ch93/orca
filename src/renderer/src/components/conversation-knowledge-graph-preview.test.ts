@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ConversationKnowledgeGraph } from '../../../shared/conversation-knowledge-graph'
 import {
+  conversationKnowledgeGraphNodeWidth,
   focusConversationKnowledgeGraph,
   positionConversationKnowledgeGraphNodes,
   toggleFocusedNode
@@ -47,8 +48,37 @@ describe('focusConversationKnowledgeGraph', () => {
     const narrowKnowledge = narrow.find((node) => node.id === 'concept:git')
     const wideKnowledge = wide.find((node) => node.id === 'concept:git')
 
-    expect(narrowKnowledge?.x).toBe(402)
-    expect(wideKnowledge?.x).toBe(477)
-    expect(wide.find((node) => node.id === 'digest:one')?.x).toBe(241)
+    expect(narrowKnowledge?.x).toBe(436)
+    expect(wideKnowledge?.x).toBe(706)
+    expect(wide.find((node) => node.id === 'digest:one')?.x).toBe(362)
+  })
+
+  it('uses narrower columns when a knowledge-note column is present', () => {
+    const graphWithNote: ConversationKnowledgeGraph = {
+      ...graph,
+      nodes: [
+        ...graph.nodes,
+        {
+          id: 'note:git-workflows',
+          type: 'note',
+          label: 'Safe Git workflows',
+          itemCount: 1,
+          knowledgeNote: {
+            conceptId: 'concept:git',
+            kind: 'method',
+            applicability: 'Git repositories',
+            status: 'supported',
+            evidenceCount: 1
+          }
+        }
+      ]
+    }
+
+    expect(conversationKnowledgeGraphNodeWidth(graphWithNote, 580)).toBe(128)
+    expect(
+      positionConversationKnowledgeGraphNodes(graphWithNote, 580).find(
+        (node) => node.id === 'note:git-workflows'
+      )?.x
+    ).toBe(434)
   })
 })
