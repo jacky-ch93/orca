@@ -77,6 +77,7 @@
       "stop": "无法停止生成会话知识。"
     },
     "detail": {
+      "resize": "调整详情宽度",
       "generatedBy": "由 {{agent}} · {{model}} 生成",
       "created": "创建于",
       "modified": "最后修改于",

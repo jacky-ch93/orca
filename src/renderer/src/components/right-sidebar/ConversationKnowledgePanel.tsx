@@ -39,6 +39,8 @@ import {
   ConversationKnowledgeGraphModeSwitch,
   type ConversationKnowledgeGraphMode
 } from './ConversationKnowledgeGraphModeSwitch'
+import { ConversationKnowledgeResizeHandle } from './ConversationKnowledgeResizeHandle'
+import { useConversationKnowledgeDetailResize } from './use-conversation-knowledge-detail-resize'
 
 const IDLE_STATUS: ConversationKnowledgeIndexStatus = {
   state: 'idle',
@@ -70,6 +72,11 @@ export default function ConversationKnowledgePanel({
     typeof window === 'undefined' ? 'all' : readConversationKnowledgeViewMode(window.localStorage)
   )
   const activeProjectId = activeWorktree?.repoId ?? null
+  const {
+    containerRef: detailPanelRef,
+    isResizing: isDetailPanelResizing,
+    onResizeStart: onDetailPanelResizeStart
+  } = useConversationKnowledgeDetailResize()
   const generatorAgent = settings?.conversationKnowledgeEnrichmentAgent ?? null
   const generatorModel = useMemo(
     () =>
@@ -315,8 +322,8 @@ export default function ConversationKnowledgePanel({
           )}
         </div>
       ) : (
-        <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(240px,1fr)_minmax(0,1fr)] divide-y divide-border @min-[720px]/conversation-knowledge:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] @min-[720px]/conversation-knowledge:grid-rows-[minmax(0,1fr)] @min-[720px]/conversation-knowledge:divide-x @min-[720px]/conversation-knowledge:divide-y-0">
-          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden p-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-border @min-[720px]/conversation-knowledge:flex-row @min-[720px]/conversation-knowledge:divide-x @min-[720px]/conversation-knowledge:divide-y-0">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3">
             <div className="min-h-0 flex-1">
               {graphMode === 'map' ? (
                 <ConversationKnowledgeMap
@@ -353,38 +360,47 @@ export default function ConversationKnowledgePanel({
               )}
             </div>
           </div>
-          <ScrollArea className="min-h-0 min-w-0">
-            {selectedNote ? (
-              <ConversationKnowledgeNoteDetail
-                note={selectedNote}
-                graph={visibleGraph}
-                onSelectItem={chooseItem}
-              />
-            ) : selectedConcept ? (
-              <ConversationKnowledgeConceptDetail
-                concept={selectedConcept}
-                graph={visibleGraph}
-                onSelectItem={chooseItem}
-              />
-            ) : visibleSelected ? (
-              <ConversationKnowledgeDetail
-                item={visibleSelected}
-                highlightEvidenceId={highlightEvidenceId}
-              />
-            ) : (
-              <p className="p-4 text-sm text-muted-foreground">
-                {searchQuery.trim()
-                  ? translate(
-                      'conversationKnowledge.empty.search',
-                      'No matching summaries or related nodes.'
-                    )
-                  : translate(
-                      'conversationKnowledge.empty.selection',
-                      'Select a topic or summary node to inspect its details and sources.'
-                    )}
-              </p>
-            )}
-          </ScrollArea>
+          <div
+            ref={detailPanelRef}
+            className="relative min-h-0 min-w-0 flex-1 @min-[720px]/conversation-knowledge:flex-none"
+          >
+            <ConversationKnowledgeResizeHandle
+              isResizing={isDetailPanelResizing}
+              onResizeStart={onDetailPanelResizeStart}
+            />
+            <ScrollArea className="h-full min-h-0 min-w-0">
+              {selectedNote ? (
+                <ConversationKnowledgeNoteDetail
+                  note={selectedNote}
+                  graph={visibleGraph}
+                  onSelectItem={chooseItem}
+                />
+              ) : selectedConcept ? (
+                <ConversationKnowledgeConceptDetail
+                  concept={selectedConcept}
+                  graph={visibleGraph}
+                  onSelectItem={chooseItem}
+                />
+              ) : visibleSelected ? (
+                <ConversationKnowledgeDetail
+                  item={visibleSelected}
+                  highlightEvidenceId={highlightEvidenceId}
+                />
+              ) : (
+                <p className="p-4 text-sm text-muted-foreground">
+                  {searchQuery.trim()
+                    ? translate(
+                        'conversationKnowledge.empty.search',
+                        'No matching summaries or related nodes.'
+                      )
+                    : translate(
+                        'conversationKnowledge.empty.selection',
+                        'Select a topic or summary node to inspect its details and sources.'
+                      )}
+                </p>
+              )}
+            </ScrollArea>
+          </div>
         </div>
       )}
     </div>
