@@ -54,13 +54,7 @@ export function ConversationKnowledgeMap({
   )
 
   const fitMap = useCallback((): void => {
-    const scale = Math.min(
-      1,
-      Math.max(
-        MIN_SCALE,
-        Math.min((viewport.width - 32) / layout.width, (viewport.height - 32) / layout.height)
-      )
-    )
+    const scale = clampScale(Math.max(0.9, Math.min(1.2, (viewport.width - 32) / layout.width)))
     setTransform({
       scale,
       x: Math.max(16, (viewport.width - layout.width * scale) / 2),
