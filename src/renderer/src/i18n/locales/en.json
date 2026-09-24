@@ -55,7 +55,10 @@
       "verifiedCount": "{{count}} verified",
       "knowledgeNote": "Knowledge note",
       "relationships": "Concept relationships",
-      "linkLegend": "Lines connect concepts explicitly associated by the same source-backed statement. To keep the map readable, it retains each concept's strongest evidence link. Numbers show supporting statements."
+      "linkLegend": "Lines connect concepts explicitly associated by the same source-backed statement. To keep the map readable, it retains each concept's strongest evidence link. Numbers show supporting statements.",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fit": "Fit map"
     },
     "relations": {
       "title": "Source-backed statements and relationships",

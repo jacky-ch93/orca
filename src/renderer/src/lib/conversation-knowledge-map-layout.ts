@@ -18,6 +18,14 @@ type MapPosition = {
   y: number
 }
 
+export type ConversationKnowledgeMapOverviewNode = MapPosition
+
+export type ConversationKnowledgeMapOverviewLink = {
+  evidenceCount: number
+  source: MapPosition
+  target: MapPosition
+}
+
 export function createConversationKnowledgeMapLayout(
   cluster: ConversationKnowledgeMapCluster,
   rootColor: string
@@ -29,6 +37,9 @@ export function createConversationKnowledgeMapLayout(
   width: number
 } {
   const links = buildPrimaryLinks(cluster)
+  if (cluster.concepts.length <= 3) {
+    return createCompactClusterLayout(cluster.concepts, links, rootColor)
+  }
   const levels = buildConceptLevels(cluster.concepts, links)
   const colors = buildConceptColors(levels, links, rootColor)
   const widestLevel = Math.max(...levels.map((level) => level.length))
@@ -59,12 +70,99 @@ export function createConversationKnowledgeMapLayout(
   }
 }
 
+function createCompactClusterLayout(
+  concepts: ConversationKnowledgeMapConcept[],
+  links: ConversationKnowledgeMapLink[],
+  rootColor: string
+): {
+  colors: ReadonlyMap<string, string>
+  height: number
+  links: ConversationKnowledgeMapLink[]
+  positions: MapPosition[]
+  width: number
+} {
+  const width = Math.max(248, concepts.length * 112 + 56)
+  return {
+    colors: new Map(concepts.map((entry) => [entry.concept.id, rootColor])),
+    height: 184,
+    links,
+    positions: concepts.map((entry, index) => ({ entry, x: 84 + index * 112, y: 92 })),
+    width
+  }
+}
+
 export function linkColorForKnowledgeMap(
   link: ConversationKnowledgeMapLink,
   colors: ReadonlyMap<string, string>,
   rootId: string
 ): string {
   return colors.get(link.source === rootId ? link.target : link.source) ?? 'var(--chart-1)'
+}
+
+export function createConversationKnowledgeMapOverviewLayout(
+  clusters: ConversationKnowledgeMapCluster[]
+): {
+  height: number
+  links: ConversationKnowledgeMapOverviewLink[]
+  nodes: ConversationKnowledgeMapOverviewNode[]
+  width: number
+} {
+  const maxRowWidth = 1_600
+  const padding = 64
+  let x = padding
+  let y = padding
+  let rowHeight = 0
+  let width = 0
+  const nodes: ConversationKnowledgeMapOverviewNode[] = []
+  const links: ConversationKnowledgeMapOverviewLink[] = []
+  const connectedClusters = clusters.filter((cluster) => cluster.concepts.length > 1)
+  const isolatedConcepts = clusters.flatMap((cluster) =>
+    cluster.concepts.length === 1 ? cluster.concepts : []
+  )
+  for (const [index, cluster] of connectedClusters.entries()) {
+    const layout = createConversationKnowledgeMapLayout(
+      cluster,
+      knowledgeMapColors[index % knowledgeMapColors.length]!
+    )
+    if (x > padding && x + layout.width > maxRowWidth) {
+      x = padding
+      y += rowHeight + padding
+      rowHeight = 0
+    }
+    const positionedById = new Map<string, MapPosition>()
+    for (const position of layout.positions) {
+      const next = { entry: position.entry, x: position.x + x, y: position.y + y }
+      nodes.push(next)
+      positionedById.set(position.entry.concept.id, next)
+    }
+    for (const link of layout.links) {
+      const source = positionedById.get(link.source)
+      const target = positionedById.get(link.target)
+      if (source && target) {
+        links.push({ evidenceCount: link.evidenceCount, source, target })
+      }
+    }
+    x += layout.width + padding
+    rowHeight = Math.max(rowHeight, layout.height)
+    width = Math.max(width, x)
+  }
+  if (isolatedConcepts.length) {
+    if (x > padding) {
+      y += rowHeight + padding
+    }
+    const columns = Math.min(10, isolatedConcepts.length)
+    const cellSize = 104
+    for (const [index, entry] of isolatedConcepts.entries()) {
+      nodes.push({
+        entry,
+        x: padding + (index % columns) * cellSize + cellSize / 2,
+        y: y + Math.floor(index / columns) * cellSize + cellSize / 2
+      })
+    }
+    width = Math.max(width, padding * 2 + columns * cellSize)
+    rowHeight = Math.ceil(isolatedConcepts.length / columns) * cellSize
+  }
+  return { height: y + rowHeight + padding, links, nodes, width: Math.max(width, 640) }
 }
 
 function buildPrimaryLinks(
