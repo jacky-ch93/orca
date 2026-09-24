@@ -35,8 +35,17 @@
     "claimResults": "匹配的陈述",
     "graphMode": {
       "ariaLabel": "图谱视图",
-      "topics": "图谱",
-      "relations": "有来源陈述"
+      "map": "地图",
+      "graph": "图谱"
+    },
+    "map": {
+      "empty": "暂无具备明确概念关联的来源陈述。重新生成知识以构建地图。",
+      "relatedConcepts": "关联概念",
+      "independentConcept": "概念",
+      "conceptCount": "{{count}} 个概念",
+      "evidenceCount": "{{count}} 条有来源陈述",
+      "verifiedCount": "{{count}} 条已验证",
+      "knowledgeNote": "知识笔记"
     },
     "relations": {
       "title": "有来源陈述与语义关系",

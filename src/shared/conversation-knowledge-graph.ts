@@ -14,7 +14,7 @@ export type ConversationKnowledgeGraphNode = {
   item?: ConversationKnowledgeItem
   sourceBacked?: Pick<
     ConversationKnowledgeHandoffEntry,
-    'kind' | 'reliability' | 'lifecycle' | 'knowledge'
+    'kind' | 'reliability' | 'lifecycle' | 'knowledge' | 'concepts'
   >
   knowledgeNote?: {
     conceptId: string
@@ -110,6 +110,7 @@ function connectKnowledgeNotes(
         )
         .map((edge) => edge.source)
     )
+
     const evidence = [...edges.values()]
       .filter((edge) => digestIds.has(edge.source) && edge.relation === 'records')
       .map((edge) => nodes.get(edge.target))
@@ -187,13 +188,7 @@ function connectCandidateNodes(
     }
     seen.add(normalized)
     const candidateId = `candidate:${item.id}:${index}`
-    nodes.set(candidateId, {
-      id: candidateId,
-      type: 'candidate',
-      label,
-      itemCount: 1,
-      item
-    })
+    nodes.set(candidateId, { id: candidateId, type: 'candidate', label, itemCount: 1, item })
     addEdge(edges, digestId, candidateId, 'contains')
   }
 }
@@ -220,6 +215,7 @@ function connectSourceBackedStatementNodes(
         kind: entry.kind,
         reliability: entry.reliability,
         lifecycle: entry.lifecycle,
+        concepts: entry.concepts,
         knowledge: entry.knowledge
       }
     })

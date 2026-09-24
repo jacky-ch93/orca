@@ -47,8 +47,8 @@ export async function enrichAiVaultSession(input: {
     'You are an information curator for a developer workspace.',
     `Write all human-readable fields in ${summaryLanguage(input.language)}.`,
     'Summarize the conversation below as strict JSON only, with this schema:',
-    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"],"searchTerms":["4-8 alternate phrases, synonyms, or likely search queries"],"handoff":[{"kind":"decision|constraint|progress|open-loop","text":"short statement","reliability":"user-confirmed|verified|inferred|proposal","evidence":{"kind":"conversation|tool-result","messageId":"literal source message id","supportingMessageIds":["optional confirming user message ids"]},"claim":{"subject":"literal subject from user message","relation":"single-valued relation name","object":"literal value from user message","cardinality":"single"},"knowledge":{"kind":"fact|method|finding|decision|constraint","applicability":"where this is reusable","reusable":true}}]}',
-    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters. Keep search terms short and include common English technical aliases when useful. Only mark user-confirmed or verified when the transcript directly supports it; otherwise use inferred or proposal. Include knowledge only when the statement is objectively reusable or is a durable workspace decision/constraint, its applicability is explicit, and it has user-confirmed or verified evidence. Never include knowledge for a progress update, question, proposal, one-off status, or mere topic mention.',
+    '{"title":"short descriptive title","summary":"one concise paragraph","topics":["3-6 short labels"],"conclusions":["concrete decisions or outcomes"],"entities":["projects, tools, or technologies"],"searchTerms":["4-8 alternate phrases, synonyms, or likely search queries"],"handoff":[{"kind":"decision|constraint|progress|open-loop","text":"short statement","reliability":"user-confirmed|verified|inferred|proposal","evidence":{"kind":"conversation|tool-result","messageId":"literal source message id","supportingMessageIds":["optional confirming user message ids"]},"concepts":["1-3 exact labels from this item topics or entities that this statement directly concerns"],"claim":{"subject":"literal subject from user message","relation":"single-valued relation name","object":"literal value from user message","cardinality":"single"},"knowledge":{"kind":"fact|method|finding|decision|constraint","applicability":"where this is reusable","reusable":true}}]}',
+    'Do not include markdown fences or commentary. Preserve concrete decisions and outcomes. Keep the title under 80 characters and the summary under 500 characters. Keep search terms short and include common English technical aliases when useful. Only mark user-confirmed or verified when the transcript directly supports it; otherwise use inferred or proposal. Each handoff concepts list is navigation metadata, not a fact: include only 1-3 exact labels already present in this item topics or entities that the sourced statement directly concerns; omit it when no such label exists. Include knowledge only when the statement is objectively reusable or is a durable workspace decision/constraint, its applicability is explicit, and it has user-confirmed or verified evidence. Never include knowledge for a progress update, question, proposal, one-off status, or mere topic mention.',
     CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION,
     `Conversation title: ${input.session.title}`,
     transcript || '(conversation has no readable user/assistant messages)'
@@ -208,15 +208,27 @@ export function parseConversationKnowledgeOutput(
   if (!isEnrichment(value)) {
     throw new Error('Agent did not return structured knowledge JSON.')
   }
+  const topics = normalizeLabels(value.topics, 12)
+  const entities = normalizeLabels(value.entities, 20)
+  const allowedConcepts = new Set([...topics, ...entities].map(normalizeConceptLabel))
   return {
     title: typeof value.title === 'string' ? value.title.trim().slice(0, 120) : undefined,
     summary: value.summary.trim().slice(0, 2_000),
-    topics: normalizeLabels(value.topics, 12),
+    topics,
     conclusions: normalizeLabels(value.conclusions, 12),
-    entities: normalizeLabels(value.entities, 20),
+    entities,
     searchTerms: normalizeLabels(value.searchTerms ?? [], 16),
-    handoff: normalizeConversationKnowledgeHandoff(value.handoff ?? [])
+    handoff: normalizeConversationKnowledgeHandoff(value.handoff ?? []).map((entry) => {
+      const concepts = entry.concepts?.filter((concept) =>
+        allowedConcepts.has(normalizeConceptLabel(concept))
+      )
+      return concepts?.length ? { ...entry, concepts } : { ...entry, concepts: undefined }
+    })
   }
+}
+
+function normalizeConceptLabel(value: string): string {
+  return value.normalize('NFKC').trim().toLocaleLowerCase()
 }
 
 export function redactConversationText(text: string): string {

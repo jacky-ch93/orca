@@ -137,6 +137,12 @@ function isHandoffEntry(value: unknown): boolean {
         evidenceRecord.supportingMessageIds.every((messageId) => typeof messageId === 'string'))) &&
     (record.lifecycle === undefined || isLifecycle(record.lifecycle)) &&
     (record.claim === undefined || isClaim(record.claim)) &&
+    (record.concepts === undefined ||
+      (Array.isArray(record.concepts) &&
+        record.concepts.length <= 3 &&
+        record.concepts.every(
+          (concept) => typeof concept === 'string' && concept.trim().length > 0
+        ))) &&
     (record.knowledge === undefined || isKnowledge(record.knowledge))
   )
 }

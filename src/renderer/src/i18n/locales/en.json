@@ -43,8 +43,17 @@
     "claimResults": "Matching statements",
     "graphMode": {
       "ariaLabel": "Graph view",
-      "topics": "Graph",
-      "relations": "Source-backed"
+      "map": "Map",
+      "graph": "Graph"
+    },
+    "map": {
+      "empty": "No source-backed statements with explicit concept links yet. Regenerate knowledge to build the map.",
+      "relatedConcepts": "Related concepts",
+      "independentConcept": "Concept",
+      "conceptCount": "{{count}} concepts",
+      "evidenceCount": "{{count}} source-backed",
+      "verifiedCount": "{{count}} verified",
+      "knowledgeNote": "Knowledge note"
     },
     "relations": {
       "title": "Source-backed statements and relationships",

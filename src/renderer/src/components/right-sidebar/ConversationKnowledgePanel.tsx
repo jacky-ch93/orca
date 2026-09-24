@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConversationKnowledgeGraphPreview } from '@/components/conversation-knowledge-graph-preview'
+import { ConversationKnowledgeMap } from '@/components/conversation-knowledge-map'
 import {
   consumeConversationKnowledgeItem,
   selectConversationKnowledgeItem
@@ -20,7 +21,6 @@ import {
   scopeConversationKnowledgeGraphToProject,
   searchConversationKnowledgeGraph
 } from '@/lib/conversation-knowledge-graph-filter'
-import { overviewConversationKnowledgeGraph } from '@/lib/conversation-knowledge-graph-overview'
 import {
   readConversationKnowledgeViewMode,
   writeConversationKnowledgeViewMode,
@@ -34,18 +34,11 @@ import { useTranslation } from 'react-i18next'
 import { ConversationKnowledgeDetail } from './ConversationKnowledgeDetail'
 import { ConversationKnowledgeConceptDetail } from './ConversationKnowledgeConceptDetail'
 import { ConversationKnowledgeNoteDetail } from './ConversationKnowledgeNoteDetail'
-import { ConversationKnowledgeClaimResults } from './ConversationKnowledgeClaimResults'
-import { ConversationKnowledgeRelationGraph } from './ConversationKnowledgeRelationGraph'
 import { ConversationKnowledgeIndexProgress } from './ConversationKnowledgeIndexProgress'
 import {
   ConversationKnowledgeGraphModeSwitch,
   type ConversationKnowledgeGraphMode
 } from './ConversationKnowledgeGraphModeSwitch'
-import {
-  searchConversationKnowledgeClaims,
-  type ConversationKnowledgeClaimMatch
-} from '@/lib/conversation-knowledge-claim-search'
-import { buildConversationKnowledgeRelations } from '@/lib/conversation-knowledge-relations'
 
 const IDLE_STATUS: ConversationKnowledgeIndexStatus = {
   state: 'idle',
@@ -71,7 +64,7 @@ export default function ConversationKnowledgePanel({
   const [status, setStatus] = useState<ConversationKnowledgeIndexStatus>(IDLE_STATUS)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [graphMode, setGraphMode] = useState<ConversationKnowledgeGraphMode>('topics')
+  const [graphMode, setGraphMode] = useState<ConversationKnowledgeGraphMode>('map')
   const [highlightEvidenceId, setHighlightEvidenceId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ConversationKnowledgeViewMode>(() =>
     typeof window === 'undefined' ? 'all' : readConversationKnowledgeViewMode(window.localStorage)
@@ -102,21 +95,9 @@ export default function ConversationKnowledgePanel({
     [scopedGraph, searchQuery]
   )
   const scopedItems = useMemo(() => conversationKnowledgeItemsInGraph(scopedGraph), [scopedGraph])
-  const claimMatches = useMemo(
-    () => searchConversationKnowledgeClaims(scopedItems, searchQuery),
-    [scopedItems, searchQuery]
-  )
-  const relations = useMemo(
-    () => buildConversationKnowledgeRelations(scopedItems, searchQuery),
-    [scopedItems, searchQuery]
-  )
   const visibleItems = useMemo(
     () => conversationKnowledgeItemsInGraph(visibleGraph),
     [visibleGraph]
-  )
-  const previewGraph = useMemo(
-    () => (searchQuery.trim() ? visibleGraph : overviewConversationKnowledgeGraph(visibleGraph)),
-    [searchQuery, visibleGraph]
   )
   const visibleSelected =
     visibleItems.find((item) => item.id === selected?.id) ?? visibleItems[0] ?? null
@@ -221,11 +202,6 @@ export default function ConversationKnowledgePanel({
     setSelectedConceptId(null)
     setSelectedNoteId(null)
     setHighlightEvidenceId(null)
-  }
-
-  const chooseClaim = (match: ConversationKnowledgeClaimMatch): void => {
-    setSelected(match.item)
-    setHighlightEvidenceId(match.entry.evidence.messageId)
   }
 
   const chooseViewMode = (mode: ConversationKnowledgeViewMode): void => {
@@ -341,15 +317,19 @@ export default function ConversationKnowledgePanel({
       ) : (
         <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(240px,1fr)_minmax(0,1fr)] divide-y divide-border @min-[720px]/conversation-knowledge:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] @min-[720px]/conversation-knowledge:grid-rows-[minmax(0,1fr)] @min-[720px]/conversation-knowledge:divide-x @min-[720px]/conversation-knowledge:divide-y-0">
           <div className="flex min-h-0 min-w-0 flex-col overflow-hidden p-3">
-            {graphMode === 'topics' ? (
-              <ConversationKnowledgeClaimResults matches={claimMatches} onSelect={chooseClaim} />
-            ) : null}
             <div className="min-h-0 flex-1">
-              {graphMode === 'relations' ? (
-                <ConversationKnowledgeRelationGraph relations={relations} onSelect={chooseClaim} />
+              {graphMode === 'map' ? (
+                <ConversationKnowledgeMap
+                  graph={visibleGraph}
+                  selectedConceptId={selectedConceptId}
+                  onSelectConcept={(concept) => {
+                    setSelectedConceptId(concept.id)
+                    setSelectedNoteId(null)
+                  }}
+                />
               ) : (
                 <ConversationKnowledgeGraphPreview
-                  graph={previewGraph}
+                  graph={visibleGraph}
                   selectedItemId={visibleSelected?.id}
                   onSelectItem={chooseItem}
                   onSelectNode={(node) => {

@@ -96,6 +96,13 @@ function normalizeEntry(
           }
         }
       : {}),
+    ...(entry.concepts
+      ? {
+          concepts: [...new Set(entry.concepts.map((concept) => concept.trim()).filter(Boolean))]
+            .slice(0, 3)
+            .map((concept) => concept.slice(0, 120))
+        }
+      : {}),
     ...(entry.knowledge
       ? {
           knowledge: {
@@ -131,7 +138,17 @@ function isHandoffEntry(value: unknown): value is ConversationKnowledgeHandoffEn
       (Array.isArray(evidenceRecord.supportingMessageIds) &&
         evidenceRecord.supportingMessageIds.every((messageId) => typeof messageId === 'string'))) &&
     isOptionalClaim(record.claim) &&
+    isOptionalConcepts(record.concepts) &&
     isOptionalKnowledge(record.knowledge)
+  )
+}
+
+function isOptionalConcepts(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.length <= 3 &&
+      value.every((concept) => typeof concept === 'string' && concept.trim().length > 0))
   )
 }
 

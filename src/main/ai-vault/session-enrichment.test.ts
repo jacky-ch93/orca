@@ -98,6 +98,28 @@ describe('parseConversationKnowledgeOutput', () => {
     })
   })
 
+  it('retains explicit navigation concepts for a source-backed statement', () => {
+    expect(
+      parseConversationKnowledgeOutput(
+        JSON.stringify({
+          summary: 'Use source-backed evidence before promoting knowledge.',
+          topics: ['Knowledge map'],
+          conclusions: [],
+          entities: ['Evidence'],
+          handoff: [
+            {
+              kind: 'constraint',
+              text: 'Attach evidence only to directly related concepts.',
+              reliability: 'user-confirmed',
+              evidence: { kind: 'conversation', messageId: 'user-1' },
+              concepts: ['Knowledge map', 'Evidence']
+            }
+          ]
+        })
+      ).handoff[0]?.concepts
+    ).toEqual(['Knowledge map', 'Evidence'])
+  })
+
   it('retains verified tool-result evidence for reusable findings', () => {
     const entry = {
       kind: 'progress' as const,
