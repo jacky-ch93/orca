@@ -13,6 +13,13 @@ export type ConversationKnowledgeMapConcept = {
 export type ConversationKnowledgeMapCluster = {
   concepts: ConversationKnowledgeMapConcept[]
   id: string
+  links: ConversationKnowledgeMapLink[]
+}
+
+export type ConversationKnowledgeMapLink = {
+  evidenceCount: number
+  source: string
+  target: string
 }
 
 export function buildConversationKnowledgeMap(
@@ -77,7 +84,7 @@ export function buildConversationKnowledgeMap(
   })
   return clusterMapConcepts(
     mapConcepts.filter((concept) => concept.evidenceCount > 0),
-    relatedConceptIds
+    countConceptLinks(relatedConceptIds)
   )
 }
 
@@ -108,24 +115,11 @@ function statementConceptIds(
 
 function clusterMapConcepts(
   concepts: ConversationKnowledgeMapConcept[],
-  statementConceptIds: ReadonlyMap<string, readonly string[]>
+  links: readonly ConversationKnowledgeMapLink[]
 ): ConversationKnowledgeMapCluster[] {
   const parent = new Map(concepts.map(({ concept }) => [concept.id, concept.id]))
-  const cooccurrences = new Map<string, number>()
-  for (const ids of statementConceptIds.values()) {
-    for (let index = 0; index < ids.length; index += 1) {
-      for (let otherIndex = index + 1; otherIndex < ids.length; otherIndex += 1) {
-        const key = [ids[index], ids[otherIndex]].sort().join('\0')
-        cooccurrences.set(key, (cooccurrences.get(key) ?? 0) + 1)
-      }
-    }
-  }
-  for (const [key, count] of cooccurrences) {
-    if (count < 2) {
-      continue
-    }
-    const [left, right] = key.split('\0')
-    union(parent, left, right)
+  for (const link of links) {
+    union(parent, link.source, link.target)
   }
   const grouped = new Map<string, ConversationKnowledgeMapConcept[]>()
   for (const concept of concepts) {
@@ -135,21 +129,44 @@ function clusterMapConcepts(
     grouped.set(root, group)
   }
   return [...grouped.entries()]
-    .map(([id, group]) => ({
-      concepts: group.sort(
-        (left, right) =>
-          right.evidenceCount - left.evidenceCount ||
-          right.concept.itemCount - left.concept.itemCount ||
-          left.concept.label.localeCompare(right.concept.label)
-      ),
-      id
-    }))
+    .map(([id, group]) => {
+      const conceptIds = new Set(group.map((entry) => entry.concept.id))
+      return {
+        concepts: group.sort(
+          (left, right) =>
+            right.evidenceCount - left.evidenceCount ||
+            right.concept.itemCount - left.concept.itemCount ||
+            left.concept.label.localeCompare(right.concept.label)
+        ),
+        id,
+        links: links.filter((link) => conceptIds.has(link.source) && conceptIds.has(link.target))
+      }
+    })
     .sort(
       (left, right) =>
         right.concepts.reduce((count, entry) => count + entry.evidenceCount, 0) -
           left.concepts.reduce((count, entry) => count + entry.evidenceCount, 0) ||
         left.concepts[0]!.concept.label.localeCompare(right.concepts[0]!.concept.label)
     )
+}
+
+function countConceptLinks(
+  statementConceptIds: ReadonlyMap<string, readonly string[]>
+): ConversationKnowledgeMapLink[] {
+  const counts = new Map<string, number>()
+  for (const ids of statementConceptIds.values()) {
+    for (let index = 0; index < ids.length; index += 1) {
+      for (let otherIndex = index + 1; otherIndex < ids.length; otherIndex += 1) {
+        const [source, target] = [ids[index], ids[otherIndex]].sort()
+        const key = `${source}\0${target}`
+        counts.set(key, (counts.get(key) ?? 0) + 1)
+      }
+    }
+  }
+  return [...counts.entries()].map(([key, evidenceCount]) => {
+    const [source, target] = key.split('\0')
+    return { source, target, evidenceCount }
+  })
 }
 
 function find(parent: ReadonlyMap<string, string>, id: string): string {

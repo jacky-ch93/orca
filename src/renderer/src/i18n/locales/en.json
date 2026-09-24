@@ -53,7 +53,9 @@
       "conceptCount": "{{count}} concepts",
       "evidenceCount": "{{count}} source-backed",
       "verifiedCount": "{{count}} verified",
-      "knowledgeNote": "Knowledge note"
+      "knowledgeNote": "Knowledge note",
+      "relationships": "Concept relationships",
+      "linkLegend": "Lines connect concepts explicitly associated by the same source-backed statement. To keep the map readable, it retains each concept's strongest evidence link. Numbers show supporting statements."
     },
     "relations": {
       "title": "Source-backed statements and relationships",

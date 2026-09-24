@@ -47,11 +47,18 @@ const graph: ConversationKnowledgeGraph = {
 }
 
 describe('buildConversationKnowledgeMap', () => {
-  it('clusters only evidence-backed concepts after they share multiple source digests', () => {
+  it('clusters evidence-backed concepts after a source statement explicitly links them', () => {
     const clusters = buildConversationKnowledgeMap(graph)
 
     expect(clusters.map((cluster) => cluster.concepts.map((entry) => entry.concept.id))).toEqual([
       ['concept:architecture', 'concept:ipc']
+    ])
+    expect(clusters[0]?.links).toEqual([
+      {
+        evidenceCount: 2,
+        source: 'concept:architecture',
+        target: 'concept:ipc'
+      }
     ])
   })
 
@@ -65,6 +72,24 @@ describe('buildConversationKnowledgeMap', () => {
       evidenceCount: 2,
       hasKnowledgeNote: true,
       verifiedEvidenceCount: 1
+    })
+  })
+
+  it('keeps a one-statement concept relationship visible', () => {
+    const oneStatementGraph: ConversationKnowledgeGraph = {
+      nodes: graph.nodes.filter((node) => node.id !== 'statement:two'),
+      edges: graph.edges.filter((edge) => edge.target !== 'statement:two')
+    }
+
+    expect(buildConversationKnowledgeMap(oneStatementGraph)[0]).toMatchObject({
+      concepts: [{ concept: { id: 'concept:architecture' } }, { concept: { id: 'concept:ipc' } }],
+      links: [
+        {
+          evidenceCount: 1,
+          source: 'concept:architecture',
+          target: 'concept:ipc'
+        }
+      ]
     })
   })
 

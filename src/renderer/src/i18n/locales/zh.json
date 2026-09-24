@@ -45,7 +45,9 @@
       "conceptCount": "{{count}} 个概念",
       "evidenceCount": "{{count}} 条有来源陈述",
       "verifiedCount": "{{count}} 条已验证",
-      "knowledgeNote": "知识笔记"
+      "knowledgeNote": "知识笔记",
+      "relationships": "概念关系",
+      "linkLegend": "连线表示同一条有来源陈述明确关联的概念；为保持可读性，地图保留每个概念证据最强的主连接。数字表示支持该关联的陈述数量。"
     },
     "relations": {
       "title": "有来源陈述与语义关系",
