@@ -84,11 +84,11 @@ function ConceptSection({
           {entries.map((entry) => (
             <li key={entry.id}>
               <Button
-                className="h-auto w-full justify-start px-2 py-1.5 text-left text-xs font-normal"
+                className="h-auto w-full justify-start whitespace-normal px-2 py-1.5 text-left text-xs font-normal"
                 variant="ghost"
                 onClick={() => entry.item && onSelectItem(entry.item)}
               >
-                <span className="line-clamp-2">{entry.label}</span>
+                <span className="block break-words">{entry.label}</span>
               </Button>
             </li>
           ))}
@@ -115,17 +115,13 @@ function SourceSessionSection({
           {sessions.map((item) => (
             <li key={item.id}>
               <Button
-                className="h-auto w-full justify-start px-2 py-1.5 text-left text-xs font-normal"
+                className="h-auto w-full justify-start whitespace-normal px-2 py-1.5 text-left text-xs font-normal"
                 variant="ghost"
                 onClick={() => openConversationKnowledgeSourceHistory(item)}
               >
-                <span className="min-w-0">
-                  <span className="block truncate font-mono text-[11px]">
-                    {item.source.sessionId}
-                  </span>
-                  <span className="mt-0.5 block truncate text-muted-foreground">
-                    {item.source.title}
-                  </span>
+                <span className="min-w-0 break-words">
+                  <span className="block font-mono text-[11px]">{item.source.sessionId}</span>
+                  <span className="mt-0.5 block text-muted-foreground">{item.source.title}</span>
                 </span>
               </Button>
             </li>
