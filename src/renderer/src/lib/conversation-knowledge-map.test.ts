@@ -67,4 +67,26 @@ describe('buildConversationKnowledgeMap', () => {
       verifiedEvidenceCount: 1
     })
   })
+
+  it('uses a direct literal mention as a conservative legacy fallback', () => {
+    const legacy: ConversationKnowledgeGraph = {
+      nodes: [
+        { id: 'concept:ipc', type: 'concept', label: 'IPC', itemCount: 1 },
+        { id: 'digest:one', type: 'digest', label: 'One', itemCount: 1 },
+        {
+          id: 'statement:one',
+          type: 'statement',
+          label: 'Keep the IPC boundary stable.',
+          itemCount: 1,
+          sourceBacked: { kind: 'decision', reliability: 'user-confirmed' }
+        }
+      ],
+      edges: [{ source: 'digest:one', target: 'statement:one', relation: 'records' }]
+    }
+
+    expect(buildConversationKnowledgeMap(legacy)[0]?.concepts[0]).toMatchObject({
+      concept: { id: 'concept:ipc' },
+      evidenceCount: 1
+    })
+  })
 })

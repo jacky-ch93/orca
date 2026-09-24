@@ -46,10 +46,7 @@ export function buildConversationKnowledgeMap(
       const statement = statementById.get(statementId)
       const ids =
         statement?.type === 'statement'
-          ? (statement.sourceBacked?.concepts ?? [])
-              .map(normalizeConceptLabel)
-              .map((label) => conceptIdByLabel.get(label))
-              .filter((conceptId): conceptId is string => conceptId !== undefined)
+          ? statementConceptIds(statement, conceptIdByLabel, concepts)
           : []
       const uniqueIds = [...new Set(ids)]
       if (!uniqueIds.length) {
@@ -86,6 +83,27 @@ export function buildConversationKnowledgeMap(
 
 function normalizeConceptLabel(label: string): string {
   return label.normalize('NFKC').trim().toLocaleLowerCase()
+}
+
+function statementConceptIds(
+  statement: ConversationKnowledgeGraphNode,
+  conceptIdByLabel: ReadonlyMap<string, string>,
+  concepts: readonly ConversationKnowledgeGraphNode[]
+): string[] {
+  const explicitIds = (statement.sourceBacked?.concepts ?? [])
+    .map(normalizeConceptLabel)
+    .map((label) => conceptIdByLabel.get(label))
+    .filter((conceptId): conceptId is string => conceptId !== undefined)
+  if (explicitIds.length) {
+    return explicitIds
+  }
+  const statementText = normalizeConceptLabel(statement.label)
+  return concepts
+    .filter((concept) => {
+      const label = normalizeConceptLabel(concept.label)
+      return label.length >= 3 && statementText.includes(label)
+    })
+    .map((concept) => concept.id)
 }
 
 function clusterMapConcepts(
