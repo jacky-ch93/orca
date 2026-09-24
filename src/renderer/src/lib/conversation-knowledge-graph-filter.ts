@@ -11,6 +11,17 @@ import {
   searchConversationKnowledgeClaims
 } from './conversation-knowledge-claim-search'
 
+export function withoutConversationKnowledgeNotes(
+  graph: ConversationKnowledgeGraph
+): ConversationKnowledgeGraph {
+  const nodes = graph.nodes.filter((node) => node.type !== 'note')
+  const nodeIds = new Set(nodes.map((node) => node.id))
+  return {
+    nodes,
+    edges: graph.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+  }
+}
+
 export function scopeConversationKnowledgeGraphToProject(
   graph: ConversationKnowledgeGraph,
   projectId: string | null

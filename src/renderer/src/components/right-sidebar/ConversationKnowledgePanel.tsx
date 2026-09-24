@@ -19,7 +19,8 @@ import { translate } from '@/i18n/i18n'
 import {
   conversationKnowledgeItemsInGraph,
   scopeConversationKnowledgeGraphToProject,
-  searchConversationKnowledgeGraph
+  searchConversationKnowledgeGraph,
+  withoutConversationKnowledgeNotes
 } from '@/lib/conversation-knowledge-graph-filter'
 import {
   readConversationKnowledgeViewMode,
@@ -101,13 +102,7 @@ export default function ConversationKnowledgePanel({
     () => searchConversationKnowledgeGraph(scopedGraph, searchQuery),
     [scopedGraph, searchQuery]
   )
-  const auditGraph = useMemo(
-    () => ({
-      ...visibleGraph,
-      edges: visibleGraph.edges.filter((edge) => edge.relation !== 'organizes')
-    }),
-    [visibleGraph]
-  )
+  const auditGraph = useMemo(() => withoutConversationKnowledgeNotes(visibleGraph), [visibleGraph])
   const scopedItems = useMemo(() => conversationKnowledgeItemsInGraph(scopedGraph), [scopedGraph])
   const visibleItems = useMemo(
     () => conversationKnowledgeItemsInGraph(visibleGraph),
