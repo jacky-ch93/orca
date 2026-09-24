@@ -322,7 +322,7 @@ export default function ConversationKnowledgePanel({
           )}
         </div>
       ) : (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-border @min-[560px]/conversation-knowledge:flex-row @min-[560px]/conversation-knowledge:divide-x @min-[560px]/conversation-knowledge:divide-y-0">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-row divide-x divide-y-0 divide-border">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3">
             <div className="min-h-0 flex-1">
               {graphMode === 'map' ? (
@@ -360,10 +360,7 @@ export default function ConversationKnowledgePanel({
               )}
             </div>
           </div>
-          <div
-            ref={detailPanelRef}
-            className="relative min-h-0 min-w-0 flex-1 @min-[560px]/conversation-knowledge:flex-none"
-          >
+          <div ref={detailPanelRef} className="relative min-h-0 min-w-0 flex-none">
             <ConversationKnowledgeResizeHandle
               isResizing={isDetailPanelResizing}
               onResizeStart={onDetailPanelResizeStart}

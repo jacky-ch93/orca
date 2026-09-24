@@ -10,7 +10,7 @@ export function ConversationKnowledgeResizeHandle({
   return (
     <div
       aria-label={translate('conversationKnowledge.detail.resize', 'Resize details')}
-      className={`absolute -left-1.5 top-0 z-20 hidden h-full w-3 cursor-col-resize items-stretch justify-center @min-[560px]/conversation-knowledge:flex ${isResizing ? 'bg-ring/10' : ''}`}
+      className={`absolute -left-1.5 top-0 z-20 flex h-full w-3 cursor-col-resize items-stretch justify-center ${isResizing ? 'bg-ring/10' : ''}`}
       onMouseDown={onResizeStart}
       role="separator"
     >
