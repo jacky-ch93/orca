@@ -101,6 +101,13 @@ export default function ConversationKnowledgePanel({
     () => searchConversationKnowledgeGraph(scopedGraph, searchQuery),
     [scopedGraph, searchQuery]
   )
+  const auditGraph = useMemo(
+    () => ({
+      ...visibleGraph,
+      edges: visibleGraph.edges.filter((edge) => edge.relation !== 'organizes')
+    }),
+    [visibleGraph]
+  )
   const scopedItems = useMemo(() => conversationKnowledgeItemsInGraph(scopedGraph), [scopedGraph])
   const visibleItems = useMemo(
     () => conversationKnowledgeItemsInGraph(visibleGraph),
@@ -336,7 +343,7 @@ export default function ConversationKnowledgePanel({
                 />
               ) : (
                 <ConversationKnowledgeGraphPreview
-                  graph={visibleGraph}
+                  graph={auditGraph}
                   selectedItemId={visibleSelected?.id}
                   onSelectItem={chooseItem}
                   onSelectNode={(node) => {
