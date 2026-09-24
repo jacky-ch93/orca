@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
+import { openConversationKnowledgeSourceHistory } from '@/lib/conversation-knowledge-source-history'
 import type {
   ConversationKnowledgeGraph,
   ConversationKnowledgeGraphNode
@@ -18,7 +19,7 @@ export function ConversationKnowledgeConceptDetail({
   onSelectItem: (item: ConversationKnowledgeItem) => void
 }): React.JSX.Element {
   useTranslation()
-  const { digests, statements } = useMemo(
+  const { digests, sessions, statements } = useMemo(
     () => relatedConceptKnowledge(graph, concept.id),
     [concept.id, graph]
   )
@@ -50,6 +51,7 @@ export function ConversationKnowledgeConceptDetail({
         entries={statements}
         onSelectItem={onSelectItem}
       />
+      <SourceSessionSection sessions={sessions} />
       <ConceptSection
         title={translate('conversationKnowledge.conceptOverview.digests', 'Conversation digests')}
         empty={translate(
@@ -98,10 +100,57 @@ function ConceptSection({
   )
 }
 
+function SourceSessionSection({
+  sessions
+}: {
+  sessions: readonly ConversationKnowledgeItem[]
+}): React.JSX.Element {
+  return (
+    <section>
+      <h3 className="text-sm font-medium">
+        {translate('conversationKnowledge.conceptOverview.sourceSessions', 'Source sessions')}
+      </h3>
+      {sessions.length ? (
+        <ul className="mt-2 space-y-1">
+          {sessions.map((item) => (
+            <li key={item.id}>
+              <Button
+                className="h-auto w-full justify-start px-2 py-1.5 text-left text-xs font-normal"
+                variant="ghost"
+                onClick={() => openConversationKnowledgeSourceHistory(item)}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-mono text-[11px]">
+                    {item.source.sessionId}
+                  </span>
+                  <span className="mt-0.5 block truncate text-muted-foreground">
+                    {item.source.title}
+                  </span>
+                </span>
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {translate(
+            'conversationKnowledge.conceptOverview.noSourceSessions',
+            'No source sessions are linked to this concept.'
+          )}
+        </p>
+      )}
+    </section>
+  )
+}
+
 function relatedConceptKnowledge(
   graph: ConversationKnowledgeGraph,
   conceptId: string
-): { digests: ConversationKnowledgeGraphNode[]; statements: ConversationKnowledgeGraphNode[] } {
+): {
+  digests: ConversationKnowledgeGraphNode[]
+  sessions: ConversationKnowledgeItem[]
+  statements: ConversationKnowledgeGraphNode[]
+} {
   const digestIds = new Set(
     graph.edges
       .filter((edge) => edge.target === conceptId && edge.relation !== 'contains')
@@ -112,8 +161,16 @@ function relatedConceptKnowledge(
       .filter((edge) => digestIds.has(edge.source) && edge.relation === 'records')
       .map((edge) => edge.target)
   )
+  const digests = graph.nodes.filter((node) => digestIds.has(node.id) && node.type === 'digest')
   return {
-    digests: graph.nodes.filter((node) => digestIds.has(node.id) && node.type === 'digest'),
+    digests,
+    sessions: [
+      ...new Map(
+        digests.flatMap((digest) => (digest.item ? [[digest.item.id, digest.item]] : []))
+      ).values()
+    ].sort((left, right) =>
+      (right.source.updatedAt ?? '').localeCompare(left.source.updatedAt ?? '')
+    ),
     statements: graph.nodes.filter((node) => statementIds.has(node.id) && node.type === 'statement')
   }
 }

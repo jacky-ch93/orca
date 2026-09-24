@@ -126,7 +126,9 @@
       "sourceBacked": "有来源陈述",
       "noSourceBacked": "这个概念暂时没有关联的有来源陈述。",
       "digests": "会话摘要",
-      "noDigests": "这个概念暂时没有关联的会话摘要。"
+      "noDigests": "这个概念暂时没有关联的会话摘要。",
+      "sourceSessions": "来源会话",
+      "noSourceSessions": "这个概念暂时没有关联的来源会话。"
     },
     "settings": {
       "description": "添加图谱和详情工作区，用于浏览会话摘要、概念、知识候选及其来源。",

@@ -126,7 +126,9 @@
       "sourceBacked": "Source-backed statements",
       "noSourceBacked": "No source-backed statements are linked to this concept yet.",
       "digests": "Conversation digests",
-      "noDigests": "No conversation digests are linked to this concept."
+      "noDigests": "No conversation digests are linked to this concept.",
+      "sourceSessions": "Source sessions",
+      "noSourceSessions": "No source sessions are linked to this concept."
     },
     "settings": {
       "description": "Adds a graph and detail workspace for exploring conversation digests, concepts, knowledge candidates, and their sources.",

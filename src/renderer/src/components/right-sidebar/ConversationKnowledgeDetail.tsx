@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { translate } from '@/i18n/i18n'
-import { selectConversationHistoryTarget } from '@/lib/conversation-history-selection'
-import { useAppStore } from '@/store'
+import { openConversationKnowledgeSourceHistory } from '@/lib/conversation-knowledge-source-history'
 import {
   conversationKnowledgeEvidenceMessageIds,
   type ConversationKnowledgeItem
@@ -21,16 +20,7 @@ export function ConversationKnowledgeDetail({
   useTranslation()
 
   const openSourceHistory = (): void => {
-    selectConversationHistoryTarget(item.source)
-    const store = useAppStore.getState()
-    store.setConversationKnowledgeDrawerOpen(false)
-    store.setRightSidebarTab('vault')
-    store.setRightSidebarOpen(true)
-    const dispatchSelection = (): void => {
-      window.dispatchEvent(new Event('orca:conversation-history-select'))
-    }
-    window.setTimeout(dispatchSelection, 0)
-    window.setTimeout(dispatchSelection, 120)
+    openConversationKnowledgeSourceHistory(item)
   }
 
   return (

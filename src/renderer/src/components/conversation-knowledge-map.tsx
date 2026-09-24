@@ -35,9 +35,19 @@ export function ConversationKnowledgeMap({
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const [viewport, setViewport] = useState<Viewport>({ height: 480, width: 720 })
   const [transform, setTransform] = useState<Transform>({ scale: 1, x: 0, y: 0 })
+  const [focusedClusterId, setFocusedClusterId] = useState<string | null>(null)
   const dragRef = useRef<{ x: number; y: number } | null>(null)
   const clusters = useMemo(() => buildConversationKnowledgeMap(graph), [graph])
-  const layout = useMemo(() => createConversationKnowledgeMapOverviewLayout(clusters), [clusters])
+  const focusedCluster =
+    clusters.find((cluster) => cluster.id === focusedClusterId) ??
+    clusters.find((cluster) =>
+      cluster.concepts.some((entry) => entry.concept.id === selectedConceptId)
+    ) ??
+    clusters[0]
+  const layout = useMemo(
+    () => createConversationKnowledgeMapOverviewLayout(focusedCluster ? [focusedCluster] : []),
+    [focusedCluster]
+  )
 
   const fitMap = useCallback((): void => {
     const scale = Math.min(
@@ -87,6 +97,24 @@ export function ConversationKnowledgeMap({
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden rounded-lg border border-border/60 bg-muted/15">
+      {clusters.length > 1 ? (
+        <label className="absolute top-3 left-3 z-10 max-w-[calc(100%-8rem)] rounded-md border border-border/60 bg-background/95 px-2 py-1 text-xs shadow-xs">
+          <span className="sr-only">
+            {translate('conversationKnowledge.map.cluster', 'Concept cluster')}
+          </span>
+          <select
+            className="max-w-full bg-transparent outline-none"
+            value={focusedCluster?.id ?? ''}
+            onChange={(event) => setFocusedClusterId(event.target.value)}
+          >
+            {clusters.map((cluster) => (
+              <option key={cluster.id} value={cluster.id}>
+                {cluster.concepts[0]?.concept.label} · {cluster.concepts.length}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <div
         ref={viewportRef}
         aria-label={translate('conversationKnowledge.map.relationships', 'Concept relationships')}
