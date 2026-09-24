@@ -257,8 +257,9 @@ function ConceptMapNode({
     <Button
       aria-label={entry.concept.label}
       className={cn(
-        'absolute flex h-auto flex-col items-center justify-center whitespace-normal rounded-full border border-foreground bg-foreground p-2 text-center text-background shadow-xs hover:bg-foreground/85',
-        isSelected && 'ring-2 ring-ring ring-offset-2 ring-offset-background'
+        'absolute flex h-auto flex-col items-center justify-center whitespace-normal rounded-full border border-border/70 bg-background/95 p-2 text-center text-foreground shadow-xs hover:bg-accent',
+        isSelected &&
+          'border-foreground/40 bg-accent ring-2 ring-ring ring-offset-2 ring-offset-background'
       )}
       data-current={isSelected || undefined}
       onClick={() => onSelectConcept(entry.concept)}
@@ -267,14 +268,14 @@ function ConceptMapNode({
       variant="outline"
     >
       <span className="line-clamp-2 max-w-full text-xs font-medium">{entry.concept.label}</span>
-      <span className="mt-1 text-[10px] font-normal text-background/70">
+      <span className="mt-1 text-[10px] font-normal text-muted-foreground">
         {translate('conversationKnowledge.map.evidenceCount', '{{count}} source-backed', {
           count: entry.evidenceCount
         })}
       </span>
       {entry.verifiedEvidenceCount ? (
         <Badge
-          className="mt-1 border-background/40 bg-background/15 px-1.5 text-[9px] text-background"
+          className="mt-1 border-border/60 bg-background/70 px-1.5 text-[9px] text-foreground"
           variant="outline"
         >
           {translate('conversationKnowledge.map.verifiedCount', '{{count}} verified', {
