@@ -94,7 +94,7 @@ export function ConversationKnowledgeMap({
   }
 
   return (
-    <div className="relative h-full min-h-0 overflow-hidden rounded-lg border border-border/60 bg-muted/15">
+    <div className="relative h-full min-h-0 overflow-hidden rounded-lg border border-border/60 bg-transparent">
       {clusters.length > 1 ? (
         <label className="absolute top-3 left-3 z-10 max-w-[calc(100%-8rem)] rounded-md border border-border/60 bg-background/95 px-2 py-1 text-xs shadow-xs">
           <span className="sr-only">
