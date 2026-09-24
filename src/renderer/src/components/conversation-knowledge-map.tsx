@@ -45,8 +45,12 @@ export function ConversationKnowledgeMap({
     ) ??
     clusters[0]
   const layout = useMemo(
-    () => createConversationKnowledgeMapOverviewLayout(focusedCluster ? [focusedCluster] : []),
-    [focusedCluster]
+    () =>
+      createConversationKnowledgeMapOverviewLayout(
+        focusedCluster ? [focusedCluster] : [],
+        viewport.width - 32
+      ),
+    [focusedCluster, viewport.width]
   )
 
   const fitMap = useCallback((): void => {
@@ -253,9 +257,8 @@ function ConceptMapNode({
     <Button
       aria-label={entry.concept.label}
       className={cn(
-        'absolute flex h-auto flex-col items-center justify-center whitespace-normal rounded-full border border-border/70 bg-background/95 p-2 text-center shadow-xs hover:bg-accent',
-        isSelected &&
-          'border-foreground/40 bg-accent ring-2 ring-ring ring-offset-2 ring-offset-background'
+        'absolute flex h-auto flex-col items-center justify-center whitespace-normal rounded-full border border-foreground bg-foreground p-2 text-center text-background shadow-xs hover:bg-foreground/85',
+        isSelected && 'ring-2 ring-ring ring-offset-2 ring-offset-background'
       )}
       data-current={isSelected || undefined}
       onClick={() => onSelectConcept(entry.concept)}
@@ -264,14 +267,14 @@ function ConceptMapNode({
       variant="outline"
     >
       <span className="line-clamp-2 max-w-full text-xs font-medium">{entry.concept.label}</span>
-      <span className="mt-1 text-[10px] font-normal text-muted-foreground">
+      <span className="mt-1 text-[10px] font-normal text-background/70">
         {translate('conversationKnowledge.map.evidenceCount', '{{count}} source-backed', {
           count: entry.evidenceCount
         })}
       </span>
       {entry.verifiedEvidenceCount ? (
         <Badge
-          className="mt-1 border-border/60 bg-background/70 px-1.5 text-[9px] text-foreground"
+          className="mt-1 border-background/40 bg-background/15 px-1.5 text-[9px] text-background"
           variant="outline"
         >
           {translate('conversationKnowledge.map.verifiedCount', '{{count}} verified', {

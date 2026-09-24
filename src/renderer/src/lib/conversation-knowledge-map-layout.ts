@@ -28,7 +28,8 @@ export type ConversationKnowledgeMapOverviewLink = {
 
 export function createConversationKnowledgeMapLayout(
   cluster: ConversationKnowledgeMapCluster,
-  rootColor: string
+  rootColor: string,
+  availableWidth?: number
 ): {
   colors: ReadonlyMap<string, string>
   height: number
@@ -38,12 +39,19 @@ export function createConversationKnowledgeMapLayout(
 } {
   const links = buildPrimaryLinks(cluster)
   if (cluster.concepts.length <= 3) {
-    return createCompactClusterLayout(cluster.concepts, links, rootColor)
+    return createCompactClusterLayout(cluster.concepts, links, rootColor, availableWidth)
   }
   const levels = buildConceptLevels(cluster.concepts, links)
   const colors = buildConceptColors(levels, links, rootColor)
   const widestLevel = Math.max(...levels.map((level) => level.length))
-  const outerRadius = Math.max(0, ...levels.map((level, index) => levelRadius(index, level.length)))
+  const requiredRadius = Math.max(
+    0,
+    ...levels.map((level, index) => levelRadius(index, level.length))
+  )
+  const radiusScale = availableWidth
+    ? Math.min(1.35, Math.max(1, (availableWidth - 176) / (requiredRadius * 2)))
+    : 1
+  const outerRadius = requiredRadius * radiusScale
   const padding = 88
   const width = Math.max(360, outerRadius * 2 + padding * 2, widestLevel * 84 + padding * 2)
   const height = Math.max(272, outerRadius * 2 + padding * 2)
@@ -58,7 +66,7 @@ export function createConversationKnowledgeMapLayout(
           return { entry, ...center }
         }
         const angle = -Math.PI / 2 + (index / level.length) * Math.PI * 2
-        const radius = levelRadius(levelIndex, level.length)
+        const radius = levelRadius(levelIndex, level.length) * radiusScale
         return {
           entry,
           x: center.x + Math.cos(angle) * radius,
@@ -73,7 +81,8 @@ export function createConversationKnowledgeMapLayout(
 function createCompactClusterLayout(
   concepts: ConversationKnowledgeMapConcept[],
   links: ConversationKnowledgeMapLink[],
-  rootColor: string
+  rootColor: string,
+  availableWidth?: number
 ): {
   colors: ReadonlyMap<string, string>
   height: number
@@ -81,12 +90,16 @@ function createCompactClusterLayout(
   positions: MapPosition[]
   width: number
 } {
-  const width = Math.max(248, concepts.length * 112 + 56)
+  const width = Math.max(248, concepts.length * 112 + 56, availableWidth ?? 0)
   return {
     colors: new Map(concepts.map((entry) => [entry.concept.id, rootColor])),
     height: 184,
     links,
-    positions: concepts.map((entry, index) => ({ entry, x: 84 + index * 112, y: 92 })),
+    positions: concepts.map((entry, index) => ({
+      entry,
+      x: 64 + ((index + 0.5) * (width - 128)) / concepts.length,
+      y: 92
+    })),
     width
   }
 }
@@ -100,7 +113,8 @@ export function linkColorForKnowledgeMap(
 }
 
 export function createConversationKnowledgeMapOverviewLayout(
-  clusters: ConversationKnowledgeMapCluster[]
+  clusters: ConversationKnowledgeMapCluster[],
+  availableWidth?: number
 ): {
   height: number
   links: ConversationKnowledgeMapOverviewLink[]
@@ -122,7 +136,8 @@ export function createConversationKnowledgeMapOverviewLayout(
   for (const [index, cluster] of connectedClusters.entries()) {
     const layout = createConversationKnowledgeMapLayout(
       cluster,
-      knowledgeMapColors[index % knowledgeMapColors.length]!
+      knowledgeMapColors[index % knowledgeMapColors.length]!,
+      clusters.length === 1 ? availableWidth : undefined
     )
     if (x > padding && x + layout.width > maxRowWidth) {
       x = padding
