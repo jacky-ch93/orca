@@ -1,6 +1,7 @@
 import type { AiVaultSession } from '../../shared/ai-vault-types'
 import type { TuiAgent } from '../../shared/tui-agent'
 import type { AiVaultSessionEnrichment } from '../../shared/ai-vault-history-types'
+import { CONVERSATION_KNOWLEDGE_GENERATION_PROMPT_PREFIX } from '../../shared/conversation-knowledge-items'
 import {
   normalizeConversationKnowledgeHandoff,
   retainSourceBackedHandoff
@@ -44,6 +45,8 @@ export async function enrichAiVaultSession(input: {
     .join('\n\n')
     .slice(0, MAX_SUMMARY_TRANSCRIPT_CHARS)
   const prompt = [
+    CONVERSATION_KNOWLEDGE_GENERATION_PROMPT_PREFIX,
+    'This is an Orca system-derived background task. Do not repeat this marker in the JSON output.',
     'You are an information curator for a developer workspace.',
     `Write all human-readable fields in ${summaryLanguage(input.language)}.`,
     'Summarize the conversation below as strict JSON only, with this schema:',

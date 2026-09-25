@@ -175,7 +175,11 @@ describe('ConversationKnowledgeService', () => {
         session('real'),
         {
           ...session('internal'),
-          title: 'You are an information curator for a developer workspace.'
+          title: 'ORCA_SYSTEM_DERIVED:knowledge-enrichment v1'
+        },
+        {
+          ...session('legacy-internal'),
+          title: 'Below is a conversation log from a Claude Code coding session. Create a summary.'
         }
       ]),
       readSession: vi.fn().mockResolvedValue(readableHistory()),
@@ -192,6 +196,33 @@ describe('ConversationKnowledgeService', () => {
 
     expect(enrich).toHaveBeenCalledTimes(1)
     expect(enrich.mock.calls[0]?.[0]).toMatchObject({ session: { sessionId: 'real' } })
+  })
+
+  it('rejects a direct regeneration request for a system-derived session', async () => {
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([
+        {
+          ...session('internal'),
+          title: 'ORCA_SYSTEM_DERIVED:knowledge-enrichment v1'
+        }
+      ]),
+      readSession: vi.fn(),
+      enrich: vi.fn(),
+      store: {
+        list: vi.fn().mockResolvedValue([]),
+        upsert: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined)
+      }
+    })
+
+    await expect(
+      service.generate({
+        sourceAgent: 'claude',
+        sessionId: 'internal',
+        generatorAgent: 'codex',
+        generatorModel: 'gpt-5'
+      })
+    ).rejects.toThrow('System-derived conversations cannot be indexed')
   })
 
   it('skips zero-turn sessions and removes their cached summaries', async () => {

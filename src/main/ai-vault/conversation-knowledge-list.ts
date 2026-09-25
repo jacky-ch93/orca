@@ -5,6 +5,7 @@ import {
   type AiVaultSession
 } from '../../shared/ai-vault-types'
 import type { ConversationKnowledgeItem } from '../../shared/conversation-knowledge-items'
+import { isConversationKnowledgeGenerationTitle } from '../../shared/conversation-knowledge-items'
 import { findVerifiedLegacyEmptyIds } from './conversation-knowledge-empty-detection'
 import {
   conversationKnowledgeId,
@@ -23,22 +24,31 @@ export async function listConversationKnowledge(input: {
   }
 }): Promise<ConversationKnowledgeItem[]> {
   const [items, sessions] = await Promise.all([input.store.list(), input.listSessions()])
+  const generatedIds = items
+    .filter((item) => isConversationKnowledgeGenerationTitle(item.source.title))
+    .map((item) => item.id)
+  await input.store.remove(generatedIds)
+  const activeItems = generatedIds.length
+    ? items.filter((item) => !generatedIds.includes(item.id))
+    : items
   const sourceSessions = sessions.filter((session) => !isKnowledgeGenerationSession(session))
   const emptyIds = new Set(
     sourceSessions
       .filter((session) => !isAiVaultSessionResumableContent(session))
       .map(conversationKnowledgeId)
   )
-  await input.store.remove(items.filter((item) => emptyIds.has(item.id)).map((item) => item.id))
+  await input.store.remove(
+    activeItems.filter((item) => emptyIds.has(item.id)).map((item) => item.id)
+  )
   const legacyEmptyIds = await findVerifiedLegacyEmptyIds({
     sessions: sourceSessions,
-    items,
+    items: activeItems,
     knownEmptyIds: emptyIds,
     readSession: input.readSession
   })
   await input.store.remove([...legacyEmptyIds])
   const visible = visibleConversationKnowledgeItems({
-    items,
+    items: activeItems,
     sourceSessions,
     emptyIds,
     legacyEmptyIds

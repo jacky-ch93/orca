@@ -100,8 +100,12 @@ export type ConversationKnowledgeIndexStatus = {
   }
 }
 
+// Written by Orca's non-interactive knowledge launcher before any model instruction.
+export const CONVERSATION_KNOWLEDGE_GENERATION_PROMPT_PREFIX =
+  'ORCA_SYSTEM_DERIVED:knowledge-enrichment'
+
 export function isConversationKnowledgeGenerationTitle(title: string): boolean {
-  return /^(?:you are an information curator for a developer workspace|summarize the conversation below as strict json)/i.test(
+  return /^(?:ORCA_SYSTEM_DERIVED:knowledge-enrichment|you are an information curator for a developer workspace|summarize the conversation below as strict json|below is a conversation log from a claude code coding session)/i.test(
     title.trim()
   )
 }

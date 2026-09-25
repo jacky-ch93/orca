@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   CONVERSATION_KNOWLEDGE_FORMAT_VERSION,
+  CONVERSATION_KNOWLEDGE_GENERATION_PROMPT_PREFIX,
+  isConversationKnowledgeGenerationTitle,
   isConversationKnowledgeItemFresh,
   searchConversationKnowledgeItems,
   type ConversationKnowledgeItem
@@ -32,6 +34,19 @@ const baseItem: ConversationKnowledgeItem = {
 }
 
 describe('conversation knowledge items', () => {
+  it('identifies system-derived sessions independently of the generator model', () => {
+    expect(
+      isConversationKnowledgeGenerationTitle(
+        `${CONVERSATION_KNOWLEDGE_GENERATION_PROMPT_PREFIX} v1`
+      )
+    ).toBe(true)
+    expect(
+      isConversationKnowledgeGenerationTitle(
+        'Below is a conversation log from a Claude Code coding session. Create a summary.'
+      )
+    ).toBe(true)
+  })
+
   it('searches generated knowledge instead of raw transcript text', () => {
     expect(searchConversationKnowledgeItems([baseItem], 'unverifiable')).toEqual([baseItem])
     expect(searchConversationKnowledgeItems([baseItem], 'reconnection safeguards')).toEqual([

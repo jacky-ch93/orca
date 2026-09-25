@@ -4,6 +4,7 @@ import {
   type AiVaultSession
 } from '../../shared/ai-vault-types'
 import {
+  isConversationKnowledgeGenerationTitle,
   isConversationKnowledgeItemFresh,
   type ConversationKnowledgeIndexStatus,
   type ConversationKnowledgeItem
@@ -63,6 +64,9 @@ export class ConversationKnowledgeService {
     if (!session) {
       throw new Error('Source conversation was not found on this execution host.')
     }
+    if (isKnowledgeGenerationSession(session)) {
+      throw new Error('System-derived conversations cannot be indexed as knowledge sources.')
+    }
     const item = await generateConversationKnowledgeFromSession({
       ...this.dependencies,
       session,
@@ -99,10 +103,17 @@ export class ConversationKnowledgeService {
       // completed summaries remain valid until explicitly regenerated.
       return this.startIndex({ ...args, preserveExisting: true })
     }
-    const [sessions, existingItems] = await Promise.all([
+    const [sessions, storedItems] = await Promise.all([
       this.dependencies.listSessions(),
       this.dependencies.store.list()
     ])
+    const generatedItemIds = storedItems
+      .filter((item) => isConversationKnowledgeGenerationTitle(item.source.title))
+      .map((item) => item.id)
+    await this.dependencies.store.remove(generatedItemIds)
+    const existingItems = generatedItemIds.length
+      ? storedItems.filter((item) => !generatedItemIds.includes(item.id))
+      : storedItems
     const sourceSessions = sessions.filter((session) => !isKnowledgeGenerationSession(session))
     const knownEmptyIds = new Set(
       sourceSessions
