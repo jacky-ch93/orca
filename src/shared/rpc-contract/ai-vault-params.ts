@@ -123,3 +123,5 @@ export const AiVaultKnowledgeIndexParams = z.object({
   force: OptionalBoolean,
   language: z.string().max(32).optional()
 })
+
+export const AiVaultEmptyParams = z.object({})

@@ -1,3 +1,11 @@
+import { createSessionSearchClient } from '../../shared/ai-vault-search-client'
+import type { AiVaultSearchRequest, AiVaultSearchStatus } from '../../shared/ai-vault-search-types'
+import {
+  ALL_EXECUTION_HOSTS_SCOPE,
+  LOCAL_EXECUTION_HOST_ID,
+  type ExecutionHostId,
+  type ExecutionHostScope
+} from '../../shared/execution-host'
 import { ipcRenderer } from 'electron'
 import type {
   AiVaultDeleteSessionArgs,
@@ -27,6 +35,23 @@ import type {
   GenerateConversationKnowledgeRequest,
   StartConversationKnowledgeIndexRequest
 } from '../../shared/conversation-knowledge-items'
+
+function searchClient(
+  executionHostScope?: ExecutionHostScope
+): ReturnType<typeof createSessionSearchClient> {
+  // `all` is merged by this desktop, which already redacted each remote leg.
+  const remote =
+    executionHostScope !== undefined &&
+    executionHostScope !== LOCAL_EXECUTION_HOST_ID &&
+    executionHostScope !== ALL_EXECUTION_HOSTS_SCOPE
+  return createSessionSearchClient(
+    (method, params) =>
+      method === 'aiVault.searchSessions'
+        ? ipcRenderer.invoke('aiVault:searchSessions', params, executionHostScope)
+        : ipcRenderer.invoke('aiVault:searchStatus', executionHostScope),
+    remote ? 'relay' : 'ipc'
+  )
+}
 
 export const aiVaultApi = {
   listSessions: (args?: AiVaultListArgs): Promise<AiVaultListResult> =>
@@ -60,6 +85,16 @@ export const aiVaultApi = {
   cancelKnowledgeIndex: (): Promise<void> => ipcRenderer.invoke('aiVault:cancelKnowledgeIndex'),
   resolveSessionTitles: (args: AiVaultSessionTitlesArgs): Promise<AiVaultSessionTitlesResult> =>
     ipcRenderer.invoke('aiVault:resolveSessionTitles', args) as Promise<AiVaultSessionTitlesResult>,
+  searchSessions: (request: AiVaultSearchRequest, executionHostScope?: ExecutionHostScope) =>
+    searchClient(executionHostScope).searchSessions(request),
+  searchStatus: (executionHostScope?: ExecutionHostId) =>
+    searchClient(executionHostScope).searchStatus(),
+  setSearchEnabled: (
+    executionHostId: ExecutionHostId,
+    enabled: boolean
+  ): Promise<AiVaultSearchStatus> =>
+    ipcRenderer.invoke('aiVault:setSearchEnabled', executionHostId, enabled),
+  clearSearchIndex: (): Promise<void> => ipcRenderer.invoke('aiVault:clearSearchIndex'),
   cancelListSessions: (args: { requestToken: string }): Promise<void> =>
     ipcRenderer.invoke('aiVault:cancelListSessions', args),
   prepareSessionResume: (args: AiVaultPrepareSessionResumeArgs) =>

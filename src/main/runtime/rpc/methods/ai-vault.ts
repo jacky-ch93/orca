@@ -1,4 +1,12 @@
-import { z } from 'zod'
+import {
+  AiVaultSearchRequestSchema,
+  AiVaultSearchStatusRequestSchema,
+  AiVaultSetSearchEnabledParamsSchema
+} from '../../../../shared/ai-vault-search-contract'
+import {
+  searchSessionService,
+  sessionSearchServiceStatus
+} from '../../../ai-vault-search/session-search-service-registry'
 import { defineMethod } from '../core'
 import { restampAiVaultListResult } from '../../../ai-vault/session-list-results'
 import type { AiVaultPrepareSessionResumeArgs } from '../../../../shared/ai-vault-resume-preparation'
@@ -10,6 +18,7 @@ import {
   projectStructuredAiVaultSessions
 } from '../../../ai-vault/structured-session-ownership'
 import {
+  AiVaultEmptyParams,
   AiVaultHistorySearchParams,
   AiVaultHistoryReadParams,
   AiVaultKnowledgeListParams,
@@ -20,6 +29,7 @@ import {
   AiVaultSessionTitlesParams
 } from '../../../../shared/rpc-contract/ai-vault-params'
 export {
+  AiVaultEmptyParams,
   AiVaultHistorySearchParams,
   AiVaultHistoryReadParams,
   AiVaultKnowledgeListParams,
@@ -58,13 +68,44 @@ export const AI_VAULT_METHODS = [
   }),
   defineMethod({
     name: 'aiVault.getKnowledgeIndexStatus',
-    params: z.object({}),
+    params: AiVaultEmptyParams,
     handler: (_params, { runtime }) => runtime.getConversationKnowledgeIndexStatus()
   }),
   defineMethod({
     name: 'aiVault.cancelKnowledgeIndex',
-    params: z.object({}),
+    params: AiVaultEmptyParams,
     handler: (_params, { runtime }) => runtime.cancelConversationKnowledgeIndex()
+  }),
+  defineMethod({
+    name: 'aiVault.searchSessions',
+    params: AiVaultSearchRequestSchema,
+    handler: (params, { clientKind }) =>
+      searchSessionService(params, clientKind ? 'relay' : 'runtime')
+  }),
+  defineMethod({
+    name: 'aiVault.searchStatus',
+    params: AiVaultSearchStatusRequestSchema,
+    handler: (params, { clientKind }) =>
+      sessionSearchServiceStatus(params, clientKind ? 'relay' : 'runtime')
+  }),
+  defineMethod({
+    name: 'aiVault.setSearchEnabled',
+    params: AiVaultSetSearchEnabledParamsSchema,
+    handler: async (params, { runtime, clientKind, pairedDeviceId }) => {
+      // Paired clients only: an in-process caller writes this host's own settings directly,
+      // and admitting one here would let any unauthenticated local path flip consent.
+      if (!pairedDeviceId) {
+        throw Object.assign(
+          new Error('Session search consent can only be changed by a paired client.'),
+          { code: 'forbidden' }
+        )
+      }
+      await runtime.setSessionSearchEnabled(params.enabled)
+      console.warn(
+        `[ai-vault-search] device ${pairedDeviceId} set indexing enabled=${params.enabled}`
+      )
+      return sessionSearchServiceStatus({}, clientKind ? 'relay' : 'runtime')
+    }
   }),
   defineMethod({
     name: 'aiVault.resolveSessionTitles',
