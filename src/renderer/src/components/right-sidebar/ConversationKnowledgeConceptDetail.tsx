@@ -12,10 +12,12 @@ import type { ConversationKnowledgeItem } from '../../../../shared/conversation-
 export function ConversationKnowledgeConceptDetail({
   concept,
   graph,
+  sourceHistoryScope,
   onSelectItem
 }: {
   concept: ConversationKnowledgeGraphNode
   graph: ConversationKnowledgeGraph
+  sourceHistoryScope: 'all' | 'project'
   onSelectItem: (item: ConversationKnowledgeItem) => void
 }): React.JSX.Element {
   useTranslation()
@@ -51,7 +53,7 @@ export function ConversationKnowledgeConceptDetail({
         entries={statements}
         onSelectItem={onSelectItem}
       />
-      <SourceSessionSection sessions={sessions} />
+      <SourceSessionSection sessions={sessions} sourceHistoryScope={sourceHistoryScope} />
       <ConceptSection
         title={translate('conversationKnowledge.conceptOverview.digests', 'Conversation digests')}
         empty={translate(
@@ -101,9 +103,11 @@ function ConceptSection({
 }
 
 function SourceSessionSection({
-  sessions
+  sessions,
+  sourceHistoryScope
 }: {
   sessions: readonly ConversationKnowledgeItem[]
+  sourceHistoryScope: 'all' | 'project'
 }): React.JSX.Element {
   return (
     <section>
@@ -117,7 +121,7 @@ function SourceSessionSection({
               <Button
                 className="h-auto w-full justify-start whitespace-normal px-2 py-1.5 text-left text-xs font-normal"
                 variant="ghost"
-                onClick={() => openConversationKnowledgeSourceHistory(item)}
+                onClick={() => openConversationKnowledgeSourceHistory(item, sourceHistoryScope)}
               >
                 <span className="min-w-0 break-words">
                   <span className="block font-mono text-[11px]">{item.source.sessionId}</span>

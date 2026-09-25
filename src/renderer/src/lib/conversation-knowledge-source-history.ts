@@ -2,8 +2,11 @@ import { selectConversationHistoryTarget } from './conversation-history-selectio
 import { useAppStore } from '@/store'
 import type { ConversationKnowledgeItem } from '../../../shared/conversation-knowledge-items'
 
-export function openConversationKnowledgeSourceHistory(item: ConversationKnowledgeItem): void {
-  selectConversationHistoryTarget(item.source)
+export function openConversationKnowledgeSourceHistory(
+  item: ConversationKnowledgeItem,
+  scope: 'all' | 'project'
+): void {
+  selectConversationHistoryTarget({ ...item.source, scope })
   const store = useAppStore.getState()
   store.setConversationKnowledgeDrawerOpen(false)
   store.setRightSidebarTab('vault')

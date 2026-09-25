@@ -5,6 +5,7 @@ export type ConversationHistoryTarget = {
   executionHostId: ExecutionHostId
   agent: AiVaultAgent
   sessionId: string
+  scope: 'all' | 'project'
 }
 
 let pendingTarget: ConversationHistoryTarget | null = null

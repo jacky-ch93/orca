@@ -378,12 +378,14 @@ export default function ConversationKnowledgePanel({
                 <ConversationKnowledgeConceptDetail
                   concept={selectedConcept}
                   graph={visibleGraph}
+                  sourceHistoryScope={viewMode}
                   onSelectItem={chooseItem}
                 />
               ) : visibleSelected ? (
                 <ConversationKnowledgeDetail
                   item={visibleSelected}
                   highlightEvidenceId={highlightEvidenceId}
+                  sourceHistoryScope={viewMode}
                 />
               ) : (
                 <p className="p-4 text-sm text-muted-foreground">

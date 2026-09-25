@@ -12,15 +12,17 @@ import { SessionTime } from './ai-vault-session-time'
 
 export function ConversationKnowledgeDetail({
   item,
-  highlightEvidenceId
+  highlightEvidenceId,
+  sourceHistoryScope
 }: {
   item: ConversationKnowledgeItem
   highlightEvidenceId?: string | null
+  sourceHistoryScope: 'all' | 'project'
 }): React.JSX.Element {
   useTranslation()
 
   const openSourceHistory = (): void => {
-    openConversationKnowledgeSourceHistory(item)
+    openConversationKnowledgeSourceHistory(item, sourceHistoryScope)
   }
 
   return (

@@ -11,7 +11,9 @@ vi.mock('@/store', () => ({ useAppStore: { getState: vi.fn() } }))
 
 describe('ConversationKnowledgeDetail', () => {
   it('shows source creation and latest modification times', () => {
-    const markup = renderToStaticMarkup(<ConversationKnowledgeDetail item={knowledgeItem()} />)
+    const markup = renderToStaticMarkup(
+      <ConversationKnowledgeDetail item={knowledgeItem()} sourceHistoryScope="all" />
+    )
 
     expect(markup).toContain('Created')
     expect(markup).toContain('Last modified')
@@ -46,6 +48,7 @@ describe('ConversationKnowledgeDetail', () => {
             ]
           }
         }}
+        sourceHistoryScope="all"
       />
     )
 
@@ -75,6 +78,7 @@ describe('ConversationKnowledgeDetail', () => {
             ]
           }
         }}
+        sourceHistoryScope="all"
       />
     )
 

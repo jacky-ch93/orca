@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import {
   useActiveRepo,
@@ -51,6 +50,7 @@ import {
   useAiVaultExecutionHostScope
 } from './ai-vault-host-scope'
 import { useAiVaultPanelScope } from './use-ai-vault-panel-scope'
+import { useAiVaultHistoryNavigation } from './use-ai-vault-history-navigation'
 import { useAiVaultSearchFocusRequest } from './use-ai-vault-search-focus-request'
 import { usePersistedAiVaultViewOptions } from './use-persisted-ai-vault-view-options'
 import { AgentSessionContinuationDialog } from '@/components/agent-session-continuation/AgentSessionContinuationDialog'
@@ -59,6 +59,7 @@ import { useAiVaultSessionDeleteAction } from './ai-vault-session-delete-action'
 import { useAiVaultPanelSearch } from './use-ai-vault-search'
 import { aiVaultSearchScopeIdentity } from './ai-vault-search-scope-identity'
 import { AiVaultPanelSearch } from './AiVaultPanelSearch'
+import { copyAiVaultSessionValue } from './ai-vault-session-copy'
 export default function AiVaultPanel(): React.JSX.Element {
   const activeWorktreeId = useActiveWorktreeId()
   const activeWorktree = useActiveWorktree()
@@ -79,7 +80,6 @@ export default function AiVaultPanel(): React.JSX.Element {
   const agentCmdOverrides = settings?.agentCmdOverrides
   const paneActions = useAiVaultOriginalPaneActions()
   const [query, setQuery] = useState('')
-  // Why: scope depends on current workspace/project availability, so only stable view options persist.
   const {
     agents,
     sort,
@@ -119,7 +119,6 @@ export default function AiVaultPanel(): React.JSX.Element {
       }),
     [activeExecutionHostScope, runtimeHostOptions]
   )
-  const activeWorktreePath = activeWorktree?.path ?? null
   const activeWorktreePaths = useMemo(
     () => deriveAiVaultWorkspaceScopePaths(activeWorktree ?? null, allWorktrees),
     [activeWorktree, allWorktrees]
@@ -139,7 +138,15 @@ export default function AiVaultPanel(): React.JSX.Element {
   const activeProjectKey = projectScopeContext.activeProjectKey
   const { scope, handleScopeChange } = useAiVaultPanelScope({
     activeProjectKey,
-    activeWorktreePath
+    activeWorktreePath: activeWorktree?.path ?? null
+  })
+  useAiVaultHistoryNavigation({
+    onScopeChange: handleScopeChange,
+    setQuery,
+    setSessionLimit,
+    setAgentEnabled,
+    setCollapsedGroups,
+    onExecutionHostScopeChange
   })
   const projectLabelByKey = projectScopeContext.projectLabelByKey
   const scopePaths = useMemo(
@@ -158,8 +165,6 @@ export default function AiVaultPanel(): React.JSX.Element {
     sessions: history,
     loadedSessionLimit
   } = useAiVaultSessionRefresh(scopePaths, executionHostScope, sessionLimit)
-  // Why an identity and not paths: a project's worktrees are the host's to
-  // enumerate, and a repo with hundreds of them has no path list a request can carry.
   const searchWithin = useMemo(
     () =>
       aiVaultSearchScopeIdentity({ scope, activeWorktreeId: activeWorktree?.id, activeProjectKey }),
@@ -168,8 +173,6 @@ export default function AiVaultPanel(): React.JSX.Element {
   const search = useAiVaultPanelSearch(query, agents, searchWithin, executionHostScope, searchSort)
   const { searching, searchHits } = search
   const sessions = searching ? search.sessions : history
-  // Deliberately blind to the active repo/worktree: rebuilding these session
-  // maps on every worktree switch is what made switching visibly slow (#10841 era).
   const sessionProjectById = useMemo(
     () =>
       buildAiVaultSessionProjectById({
@@ -218,14 +221,6 @@ export default function AiVaultPanel(): React.JSX.Element {
     projectLabelByKey,
     hideEmptySessions
   })
-  const copyText = useCallback(async (text: string, label: string): Promise<void> => {
-    await window.api.ui.writeClipboardText(text)
-    toast.success(
-      translate('auto.components.right.sidebar.AiVaultPanel.valueCopied', '{{value0}} copied', {
-        value0: label
-      })
-    )
-  }, [])
   const getSessionResumeState = useCallback(
     (session: AiVaultSession) =>
       resolveAiVaultHistorySessionResumeState({
@@ -262,7 +257,6 @@ export default function AiVaultPanel(): React.JSX.Element {
       }),
     [effectiveActiveWorktreeId, getSessionResumeState, resumeTargetState, settings]
   )
-  // Settings asks for "everything, ready to type".
   const focusSearchRequestId = useAiVaultSearchFocusRequest(
     useCallback(() => handleScopeChange('all'), [handleScopeChange])
   )
@@ -285,7 +279,7 @@ export default function AiVaultPanel(): React.JSX.Element {
         searching={searching}
         loading={searching ? search.loading : loading}
         hasScanResult={Boolean(scanResult)}
-        activeWorktreePath={activeWorktreePath}
+        activeWorktreePath={activeWorktree?.path ?? null}
         activeProjectKey={activeProjectKey}
         scope={scope}
         executionHostScope={executionHostScope}
@@ -361,13 +355,13 @@ export default function AiVaultPanel(): React.JSX.Element {
               void launchActions.copyResumeCommand(session, worktreeId)
             }
             onCopyId={(session) =>
-              void copyText(
+              void copyAiVaultSessionValue(
                 session.sessionId,
                 translate('auto.components.right.sidebar.AiVaultPanel.sessionId', 'Session ID')
               )
             }
             onCopyPath={(session) =>
-              void copyText(
+              void copyAiVaultSessionValue(
                 session.filePath,
                 translate('auto.components.right.sidebar.AiVaultPanel.logPath', 'Log path')
               )
