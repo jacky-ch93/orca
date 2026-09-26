@@ -8,6 +8,7 @@ import type {
   AiVaultDeleteSessionResult
 } from '../../shared/ai-vault-session-deletion'
 import type {
+  AiVaultAgent,
   AiVaultFirstUserPromptArgs,
   AiVaultFirstUserPromptResult,
   AiVaultListArgs,
@@ -27,7 +28,6 @@ import type {
   AiVaultHistoryReadResult,
   AiVaultHistorySearchResult
 } from '../../shared/ai-vault-history-types'
-import type { AiVaultAgent } from '../../shared/ai-vault-types'
 import type {
   ConversationKnowledgeItem,
   ConversationKnowledgeIndexStatus,

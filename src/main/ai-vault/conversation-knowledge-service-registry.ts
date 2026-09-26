@@ -7,7 +7,7 @@ import { enrichAiVaultSession } from './session-enrichment'
 import { readAiVaultHistorySession } from './session-history'
 
 type ServiceEntry = {
-  service: ConversationKnowledgeService
+  service: ConversationKnowledgeService | null
   getEnvironmentResolvers: () => CommitMessageAgentEnvironmentResolvers | undefined
 }
 
@@ -18,7 +18,7 @@ export function getConversationKnowledgeService(options: {
   getEnvironmentResolvers?: () => CommitMessageAgentEnvironmentResolvers | undefined
 }): ConversationKnowledgeService {
   const existing = entries.get(options.userDataPath)
-  if (existing) {
+  if (existing?.service) {
     if (options.getEnvironmentResolvers) {
       existing.getEnvironmentResolvers = options.getEnvironmentResolvers
     }
@@ -26,7 +26,7 @@ export function getConversationKnowledgeService(options: {
   }
   const entry: ServiceEntry = {
     getEnvironmentResolvers: options.getEnvironmentResolvers ?? (() => undefined),
-    service: null as unknown as ConversationKnowledgeService
+    service: null
   }
   entry.service = new ConversationKnowledgeService({
     listSessions: async () => (await listAiVaultSessions({ unlimited: true })).sessions,

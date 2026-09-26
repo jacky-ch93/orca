@@ -74,36 +74,43 @@ export class ConversationKnowledgeStore {
 }
 
 function isStoredConversationKnowledge(value: unknown): value is StoredConversationKnowledge {
-  if (!value || typeof value !== 'object') {
+  if (!isRecord(value)) {
     return false
   }
-  const record = value as Record<string, unknown>
+  const record = value
   return record.version === 1 && Array.isArray(record.items) && record.items.every(isKnowledgeItem)
 }
 
 function isKnowledgeItem(value: unknown): value is ConversationKnowledgeItem {
-  if (!value || typeof value !== 'object') {
+  if (!isRecord(value)) {
     return false
   }
-  const item = value as Partial<ConversationKnowledgeItem>
+  const item = value
+  const source = isRecord(item.source) ? item.source : null
+  const knowledge = isRecord(item.knowledge) ? item.knowledge : null
+  const generator = isRecord(item.generator) ? item.generator : null
   return (
     typeof item.id === 'string' &&
-    typeof item.source?.sessionId === 'string' &&
-    typeof item.source.title === 'string' &&
-    (item.source.createdAt === undefined ||
-      item.source.createdAt === null ||
-      typeof item.source.createdAt === 'string') &&
-    (item.source.modifiedAt === undefined || typeof item.source.modifiedAt === 'string') &&
-    typeof item.knowledge?.summary === 'string' &&
-    Array.isArray(item.knowledge.topics) &&
-    Array.isArray(item.knowledge.conclusions) &&
-    Array.isArray(item.knowledge.entities) &&
-    (item.knowledge.searchTerms === undefined || Array.isArray(item.knowledge.searchTerms)) &&
-    (item.knowledge.handoff === undefined || item.knowledge.handoff.every(isHandoffEntry)) &&
-    typeof item.generator?.agent === 'string' &&
-    typeof item.generator.model === 'string' &&
-    typeof item.generator.generatedAt === 'string' &&
-    (item.generator.formatVersion === undefined || typeof item.generator.formatVersion === 'number')
+    source !== null &&
+    knowledge !== null &&
+    generator !== null &&
+    typeof source.sessionId === 'string' &&
+    typeof source.title === 'string' &&
+    (source.createdAt === undefined ||
+      source.createdAt === null ||
+      typeof source.createdAt === 'string') &&
+    (source.modifiedAt === undefined || typeof source.modifiedAt === 'string') &&
+    typeof knowledge.summary === 'string' &&
+    Array.isArray(knowledge.topics) &&
+    Array.isArray(knowledge.conclusions) &&
+    Array.isArray(knowledge.entities) &&
+    (knowledge.searchTerms === undefined || Array.isArray(knowledge.searchTerms)) &&
+    (knowledge.handoff === undefined ||
+      (Array.isArray(knowledge.handoff) && knowledge.handoff.every(isHandoffEntry))) &&
+    typeof generator.agent === 'string' &&
+    typeof generator.model === 'string' &&
+    typeof generator.generatedAt === 'string' &&
+    (generator.formatVersion === undefined || typeof generator.formatVersion === 'number')
   )
 }
 

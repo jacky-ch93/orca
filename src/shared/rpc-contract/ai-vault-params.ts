@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { getCommitMessageAgentSpec } from '../commit-message-agent-spec'
 import type { TuiAgent } from '../tui-agent'
+import { ALL_TUI_AGENTS } from '../tui-agent-display-names'
 import { parseExecutionHostId } from '../execution-host'
 import { AI_VAULT_AGENTS, AI_VAULT_SCOPE_PATHS_MAX_COUNT } from '../ai-vault-types'
 import { OptionalBoolean } from './rpc-param-primitives'
@@ -90,8 +91,11 @@ export const AiVaultHistoryReadParams = z.object({
 })
 
 const knowledgeGeneratorAgentSchema = z.string().transform((value, ctx): TuiAgent => {
-  if (getCommitMessageAgentSpec(value as TuiAgent)) {
-    return value as TuiAgent
+  const agent = ALL_TUI_AGENTS.find(
+    (candidate) => candidate === value && getCommitMessageAgentSpec(candidate) !== undefined
+  )
+  if (agent) {
+    return agent
   }
   ctx.addIssue({ code: 'custom', message: 'Agent does not support background generation' })
   return z.NEVER

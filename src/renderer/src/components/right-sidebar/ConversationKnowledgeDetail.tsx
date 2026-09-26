@@ -158,7 +158,8 @@ function handoffLifecycleLabel(
       return translate('conversationKnowledge.detail.handoffConflicted', 'Conflicted')
     case 'expired':
       return translate('conversationKnowledge.detail.handoffExpired', 'Expired')
-    default:
+    case 'active':
+    case undefined:
       return translate('conversationKnowledge.detail.handoffActive', 'Active')
   }
 }

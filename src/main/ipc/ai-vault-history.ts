@@ -5,6 +5,7 @@ import { getConversationKnowledgeService } from '../ai-vault/conversation-knowle
 import { getCommitMessageAgentSpec } from '../../shared/commit-message-agent-spec'
 import { searchConversationKnowledgeItems } from '../../shared/conversation-knowledge-items'
 import type { TuiAgent } from '../../shared/tui-agent'
+import { ALL_TUI_AGENTS } from '../../shared/tui-agent-display-names'
 import type { CommitMessageAgentEnvironmentResolvers } from '../text-generation/commit-message-agent-environment'
 
 export function registerAiVaultHistoryHandlers(
@@ -96,9 +97,14 @@ export function registerAiVaultHistoryHandlers(
 }
 
 function isAiVaultAgent(value: unknown): value is AiVaultAgent {
-  return typeof value === 'string' && AI_VAULT_AGENTS.includes(value as AiVaultAgent)
+  return typeof value === 'string' && AI_VAULT_AGENTS.some((agent) => agent === value)
 }
 
 function isGenerationAgent(value: unknown): value is TuiAgent {
-  return typeof value === 'string' && getCommitMessageAgentSpec(value as TuiAgent) !== undefined
+  return (
+    typeof value === 'string' &&
+    ALL_TUI_AGENTS.some(
+      (agent) => agent === value && getCommitMessageAgentSpec(agent) !== undefined
+    )
+  )
 }

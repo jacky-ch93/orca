@@ -76,7 +76,9 @@ export function claimReliabilityLabel(
   }
 }
 
-export function claimStatusLabel(status: string | undefined): string {
+export function claimStatusLabel(
+  status: NonNullable<ConversationKnowledgeHandoffEntry['lifecycle']>['status'] | undefined
+): string {
   switch (status) {
     case 'conflicted':
       return translate('conversationKnowledge.detail.handoffConflicted', 'Conflicted')
@@ -84,7 +86,8 @@ export function claimStatusLabel(status: string | undefined): string {
       return translate('conversationKnowledge.detail.handoffSuperseded', 'Superseded')
     case 'expired':
       return translate('conversationKnowledge.detail.handoffExpired', 'Expired')
-    default:
+    case 'active':
+    case undefined:
       return translate('conversationKnowledge.detail.handoffActive', 'Active')
   }
 }

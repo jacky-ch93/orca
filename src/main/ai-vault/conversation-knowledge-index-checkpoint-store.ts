@@ -44,20 +44,24 @@ export class ConversationKnowledgeIndexCheckpointStore {
 }
 
 function isCheckpoint(value: unknown): value is ConversationKnowledgeIndexCheckpoint {
-  if (!value || typeof value !== 'object') {
+  if (!isRecord(value)) {
     return false
   }
-  const record = value as Record<string, unknown>
+  const record = value
+  const config = isRecord(record.config) ? record.config : null
   return (
     record.version === 1 &&
     (record.state === 'running' || record.state === 'stopped') &&
-    typeof record.config === 'object' &&
-    record.config !== null &&
-    typeof (record.config as Record<string, unknown>).generatorAgent === 'string' &&
-    typeof (record.config as Record<string, unknown>).generatorModel === 'string' &&
+    config !== null &&
+    typeof config.generatorAgent === 'string' &&
+    typeof config.generatorModel === 'string' &&
     typeof record.total === 'number' &&
     typeof record.completed === 'number' &&
     typeof record.failed === 'number' &&
     Array.isArray(record.pending)
   )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }

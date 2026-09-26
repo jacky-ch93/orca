@@ -12,8 +12,11 @@ import type {
   AiVaultSessionTitlesArgs,
   AiVaultSessionTitlesResult
 } from '../../../../shared/ai-vault-session-title'
-import type { AiVaultListArgs, AiVaultListResult } from '../../../../shared/ai-vault-types'
-import type { AiVaultAgent } from '../../../../shared/ai-vault-types'
+import type {
+  AiVaultAgent,
+  AiVaultListArgs,
+  AiVaultListResult
+} from '../../../../shared/ai-vault-types'
 import type {
   AiVaultHistoryReadResult,
   AiVaultHistorySearchResult
