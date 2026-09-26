@@ -32,6 +32,7 @@ export type RuntimeServiceCommandSurface = {
   cleanupSubscriptionsByPrefix: RuntimeSubscriptionRegistry['cleanupByPrefix']
   cleanupSubscriptionsForConnection: RuntimeSubscriptionRegistry['cleanupForConnection']
   cleanupSubscriptionIfOwnedByConnection: RuntimeSubscriptionRegistry['cleanupIfOwnedByConnection']
+  getSubscriptionRegistrationVersion: RuntimeSubscriptionRegistry['getRegistrationVersion']
   onNotificationDispatched: RuntimeMobileNotificationController['onDispatched']
   getMobileNotificationListenerCount: RuntimeMobileNotificationController['getListenerCount']
   dispatchMobileNotification: RuntimeMobileNotificationController['dispatch']
@@ -128,6 +129,7 @@ export function installRuntimeServiceCommandSurface(
     cleanupSubscriptionsForConnection: subscriptions.cleanupForConnection.bind(subscriptions),
     cleanupSubscriptionIfOwnedByConnection:
       subscriptions.cleanupIfOwnedByConnection.bind(subscriptions),
+    getSubscriptionRegistrationVersion: subscriptions.getRegistrationVersion.bind(subscriptions),
     onNotificationDispatched: notifications.onDispatched.bind(notifications),
     getMobileNotificationListenerCount: notifications.getListenerCount.bind(notifications),
     dispatchMobileNotification: notifications.dispatch.bind(notifications),
