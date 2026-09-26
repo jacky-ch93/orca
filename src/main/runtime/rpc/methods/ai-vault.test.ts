@@ -111,6 +111,7 @@ describe('conversation knowledge RPC', () => {
 
   it('routes persisted knowledge search through the transcript-owning runtime', async () => {
     const listConversationKnowledge = vi.fn().mockResolvedValue({ items: [] })
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Test dispatcher only calls the supplied runtime method.
     const runtime = {
       getRuntimeId: () => 'test-runtime',
       listConversationKnowledge

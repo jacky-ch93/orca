@@ -101,10 +101,12 @@ const HANDLERS = new Map<string, BoundPluginHostMethod>([
     }
   }),
   definePluginMethod('history.search', async (params, { services }) => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Plugin method schema validates the parameters before this binding runs.
     const { query, limit } = params as { query: string; limit?: number }
     return services.searchHistory({ query, limit })
   }),
   definePluginMethod('history.read', async (params, { services }) => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Plugin method schema validates the parameters before this binding runs.
     const { agent, sessionId, limit } = params as {
       agent: AiVaultAgent
       sessionId: string

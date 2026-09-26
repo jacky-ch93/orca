@@ -31,8 +31,8 @@ export function ConversationKnowledgeClaimResults({
           return (
             <li key={`${match.item.id}:${evidence.messageId}:${match.entry.text}`}>
               <Button
-                variant="ghost"
-                className="h-auto w-full justify-start px-2 py-1.5 text-left"
+                variant="dense"
+                className="w-full justify-start text-left"
                 onClick={() => onSelect(match)}
               >
                 <span className="min-w-0 space-y-1">

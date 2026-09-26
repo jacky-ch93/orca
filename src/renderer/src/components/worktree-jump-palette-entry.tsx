@@ -36,6 +36,7 @@ export function WorktreeJumpPaletteEntry({
   if (entry.type === 'hint') {
     return (
       <CommandItem
+        variant="knowledge"
         value={renderKey}
         onSelect={() => {
           const previousIndex = controller.selectionItemIds.indexOf(renderKey)
@@ -103,11 +104,7 @@ export function WorktreeJumpPaletteEntry({
   }
   if (entry.type === 'conversation-knowledge') {
     return (
-      <CommandItem
-        value={renderKey}
-        onSelect={() => controller.handleSelectItem(entry)}
-        className="jump-palette-item mx-0.5 flex min-h-0 cursor-pointer items-start gap-3 rounded-lg px-3 py-2 text-left"
-      >
+      <CommandItem value={renderKey} onSelect={() => controller.handleSelectItem(entry)}>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-medium">{entry.item.source.title}</p>
           <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">

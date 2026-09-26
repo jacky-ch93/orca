@@ -6,7 +6,9 @@ import type { Worktree } from './worktree/types'
 
 describe('buildConversationKnowledgeGraph', () => {
   it('keeps candidates separate from source-backed statements in digest relationships', () => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Fixture only uses the graph's repo fields.
     const repos = [{ id: 'repo', path: '/code/orca', displayName: 'orca' }] as Repo[]
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Fixture only uses the graph's worktree fields.
     const worktrees = [
       { id: 'feature', repoId: 'repo', path: '/code/orca/feature', branch: 'feature' }
     ] as Worktree[]

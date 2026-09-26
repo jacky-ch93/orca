@@ -10,7 +10,6 @@ import {
   buildConversationKnowledgeMap,
   type ConversationKnowledgeMapConcept
 } from '@/lib/conversation-knowledge-map'
-import { cn } from '@/lib/utils'
 import type {
   ConversationKnowledgeGraph,
   ConversationKnowledgeGraphNode
@@ -250,16 +249,12 @@ function ConceptMapNode({
   return (
     <Button
       aria-label={entry.concept.label}
-      className={cn(
-        'absolute flex h-auto flex-col items-center justify-center whitespace-normal rounded-full border border-border/70 bg-background/95 p-2 text-center text-foreground shadow-xs hover:bg-accent',
-        isSelected &&
-          'border-foreground/40 bg-accent ring-2 ring-ring ring-offset-2 ring-offset-background'
-      )}
+      className="absolute flex flex-col items-center justify-center whitespace-normal text-center"
       data-current={isSelected || undefined}
       onClick={() => onSelectConcept(entry.concept)}
       style={{ height: nodeSize, left: x - nodeSize / 2, top: y - nodeSize / 2, width: nodeSize }}
       type="button"
-      variant="outline"
+      variant="concept"
     >
       <span className="line-clamp-2 max-w-full text-xs font-medium">{entry.concept.label}</span>
       <span className="mt-1 text-[10px] font-normal text-muted-foreground">
@@ -268,10 +263,7 @@ function ConceptMapNode({
         })}
       </span>
       {entry.verifiedEvidenceCount ? (
-        <Badge
-          className="mt-1 border-border/60 bg-background/70 px-1.5 text-[9px] text-foreground"
-          variant="outline"
-        >
+        <Badge className="mt-1" variant="evidence">
           {translate('conversationKnowledge.map.verifiedCount', '{{count}} verified', {
             count: entry.verifiedEvidenceCount
           })}

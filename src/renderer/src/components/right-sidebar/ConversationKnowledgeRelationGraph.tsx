@@ -61,8 +61,8 @@ export function ConversationKnowledgeRelationGraph({
           <li key={relation.id} className="rounded-lg border border-border bg-background p-2.5">
             <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
               <Button
-                variant="ghost"
-                className="h-auto min-w-0 justify-start px-1.5 py-1 text-left text-xs font-medium"
+                variant="denseStrong"
+                className="min-w-0 justify-start text-left"
                 onClick={() => setFocusedConcept(conceptKey(relation.subject))}
               >
                 <span className="truncate">{relation.subject}</span>
@@ -73,8 +73,8 @@ export function ConversationKnowledgeRelationGraph({
                 <ArrowRight className="size-3 shrink-0" />
               </div>
               <Button
-                variant="ghost"
-                className="h-auto min-w-0 justify-start px-1.5 py-1 text-left text-xs font-medium"
+                variant="denseStrong"
+                className="min-w-0 justify-start text-left"
                 onClick={() => setFocusedConcept(conceptKey(relation.object))}
               >
                 <span className="truncate">{relation.object}</span>
@@ -92,8 +92,8 @@ export function ConversationKnowledgeRelationGraph({
               {relation.assertions.map((assertion) => (
                 <Button
                   key={`${assertion.item.id}:${assertion.entry.evidence.messageId}`}
-                  variant="ghost"
-                  className="h-auto w-full justify-start gap-1.5 px-1.5 py-1 text-left text-[11px] text-muted-foreground"
+                  variant="denseMuted"
+                  className="w-full justify-start text-left"
                   onClick={() => onSelect(assertion)}
                 >
                   <Badge

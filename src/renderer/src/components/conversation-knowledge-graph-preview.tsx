@@ -273,9 +273,11 @@ export function focusConversationKnowledgeGraph(
     return graph
   }
   const relatedIds = new Set(
-    graph.edges
-      .filter((edge) => edge.source === focusedNodeId || edge.target === focusedNodeId)
-      .flatMap((edge) => [edge.source, edge.target])
+    graph.edges.flatMap((edge) =>
+      edge.source === focusedNodeId || edge.target === focusedNodeId
+        ? [edge.source, edge.target]
+        : []
+    )
   )
   relatedIds.add(focusedNodeId)
   return {

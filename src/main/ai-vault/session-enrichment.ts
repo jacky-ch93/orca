@@ -255,10 +255,10 @@ function isEnrichment(value: unknown): value is {
   searchTerms?: string[]
   handoff?: unknown[]
 } {
-  if (!value || typeof value !== 'object') {
+  if (!isRecord(value)) {
     return false
   }
-  const record = value as Record<string, unknown>
+  const record = value
   return (
     (record.title === undefined || typeof record.title === 'string') &&
     typeof record.summary === 'string' &&
@@ -275,6 +275,10 @@ function isEnrichment(value: unknown): value is {
       ...(record.searchTerms ?? [])
     ].every((entry) => typeof entry === 'string')
   )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function normalizeLabels(values: readonly string[], limit: number): string[] {

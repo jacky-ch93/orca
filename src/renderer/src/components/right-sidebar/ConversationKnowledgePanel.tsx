@@ -244,23 +244,23 @@ export default function ConversationKnowledgePanel({
             <ConversationKnowledgeGraphModeSwitch value={graphMode} onChange={setGraphMode} />
             <ToggleGroup
               type="single"
+              variant="compact"
+              size="xs"
               spacing={1}
               value={viewMode}
-              onValueChange={(value) =>
-                value && chooseViewMode(value as ConversationKnowledgeViewMode)
-              }
-              className="h-7 rounded-md border border-border bg-muted/40 p-0.5 shadow-xs"
+              onValueChange={(value) => {
+                if (value === 'all' || value === 'project') {
+                  chooseViewMode(value)
+                }
+              }}
+              className="h-7"
               aria-label={translate(
                 'conversationKnowledge.scope.ariaLabel',
                 'Knowledge graph scope'
               )}
             >
               {(['all', 'project'] as const).map((mode) => (
-                <ToggleGroupItem
-                  key={mode}
-                  value={mode}
-                  className="h-6 min-h-6 rounded-sm border border-transparent px-2.5 text-[11px] text-muted-foreground shadow-none hover:bg-background/60 hover:text-foreground data-[state=on]:border-foreground/20 data-[state=on]:bg-background data-[state=on]:font-medium data-[state=on]:text-foreground data-[state=on]:shadow-xs"
-                >
+                <ToggleGroupItem key={mode} value={mode}>
                   {mode === 'all'
                     ? translate('conversationKnowledge.scope.all', 'All')
                     : translate('conversationKnowledge.scope.project', 'By project')}
@@ -271,7 +271,8 @@ export default function ConversationKnowledgePanel({
               <Search className="pointer-events-none absolute top-1/2 left-2 size-3 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
-                className="h-6 bg-muted/20 pr-2 pl-6 text-[11px] shadow-none"
+                className="h-6"
+                variant="denseSearch"
                 aria-label={translate(
                   'conversationKnowledge.search.ariaLabel',
                   'Search conversation knowledge'

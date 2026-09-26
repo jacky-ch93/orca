@@ -9,6 +9,7 @@ import {
 
 describe('ConversationKnowledgeService', () => {
   it('keeps the source agent separate from the configured generator agent', async () => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Fixture supplies every session field read by the service.
     const session = {
       executionHostId: 'local',
       agent: 'claude',

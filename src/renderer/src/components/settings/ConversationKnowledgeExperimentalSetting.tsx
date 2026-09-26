@@ -31,11 +31,9 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
       isTuiAgentEnabled(agent, settings.disabledTuiAgents) &&
       getCommitMessageAgentSpec(agent) !== undefined
   )
-  const selectedKnowledgeAgent = knowledgeAgents.includes(
-    settings.conversationKnowledgeEnrichmentAgent as TuiAgent
+  const selectedKnowledgeAgent = knowledgeAgents.find(
+    (agent) => agent === settings.conversationKnowledgeEnrichmentAgent
   )
-    ? (settings.conversationKnowledgeEnrichmentAgent as TuiAgent)
-    : null
   const [discoveredModels, setDiscoveredModels] = useState<
     Partial<Record<TuiAgent, CommitMessageModelCapability[]>>
   >({})
@@ -49,7 +47,9 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
   useEffect(() => {
     let cancelled = false
     const discover = async () => {
-      const agents = knowledgeAgentKey ? (knowledgeAgentKey.split('|') as TuiAgent[]) : []
+      const agents = knowledgeAgentKey
+        ? ALL_TUI_AGENTS.filter((agent) => knowledgeAgentKey.split('|').includes(agent))
+        : []
       const results = await Promise.all(
         agents.map(async (agent) => {
           try {
@@ -169,7 +169,10 @@ export function ConversationKnowledgeExperimentalSetting({ settings, updateSetti
                 <Select
                   value={selectedKnowledgeAgent ?? undefined}
                   onValueChange={(value) => {
-                    const agent = value as TuiAgent
+                    const agent = knowledgeAgents.find((candidate) => candidate === value)
+                    if (!agent) {
+                      return
+                    }
                     updateSettings({
                       conversationKnowledgeEnrichmentAgent: agent,
                       conversationKnowledgeEnrichmentModel:

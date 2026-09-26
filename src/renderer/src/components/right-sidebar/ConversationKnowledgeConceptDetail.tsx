@@ -86,8 +86,8 @@ function ConceptSection({
           {entries.map((entry) => (
             <li key={entry.id}>
               <Button
-                className="h-auto w-full justify-start whitespace-normal px-2 py-1.5 text-left text-xs font-normal"
-                variant="ghost"
+                className="w-full justify-start whitespace-normal text-left"
+                variant="dense"
                 onClick={() => entry.item && onSelectItem(entry.item)}
               >
                 <span className="block break-words">{entry.label}</span>
@@ -119,8 +119,8 @@ function SourceSessionSection({
           {sessions.map((item) => (
             <li key={item.id}>
               <Button
-                className="h-auto w-full justify-start whitespace-normal px-2 py-1.5 text-left text-xs font-normal"
-                variant="ghost"
+                className="w-full justify-start whitespace-normal text-left"
+                variant="dense"
                 onClick={() => openConversationKnowledgeSourceHistory(item, sourceHistoryScope)}
               >
                 <span className="min-w-0 break-words">

@@ -26,6 +26,14 @@ export default function ConversationKnowledgeSidebarHost({
     }
   }, [open, setAgentDashboardDrawerOpen])
   const left = sidebarOpen ? `var(--workspace-sidebar-live-width, ${sidebarWidth}px)` : '0px'
+  const contentStyle: React.CSSProperties = {
+    ...leftSidebarStyle,
+    left,
+    top: WORKSPACE_TOP_CHROME_HEIGHT,
+    bottom: statusBarVisible ? STATUS_BAR_RESERVE_HEIGHT : 0,
+    height: 'auto',
+    width: `min(calc(100vw - ${left}), 1294px)`
+  }
   return (
     <Sheet
       open={open}
@@ -38,25 +46,17 @@ export default function ConversationKnowledgeSidebarHost({
     >
       <SheetContent
         side="left"
+        variant="workspace"
         showCloseButton={false}
         aria-describedby={undefined}
-        className="workspace-kanban-sheet-content bg-worktree-sidebar/95 p-0 sm:max-w-none dark:bg-worktree-sidebar/95"
+        className="sm:max-w-none"
         overlayStyle={{
           top: WORKSPACE_TOP_CHROME_HEIGHT,
           bottom: statusBarVisible ? STATUS_BAR_RESERVE_HEIGHT : 0,
           left,
           pointerEvents: 'none'
         }}
-        style={
-          {
-            ...leftSidebarStyle,
-            left,
-            top: WORKSPACE_TOP_CHROME_HEIGHT,
-            bottom: statusBarVisible ? STATUS_BAR_RESERVE_HEIGHT : 0,
-            height: 'auto',
-            width: `min(calc(100vw - ${left}), 1294px)`
-          } as React.CSSProperties
-        }
+        style={contentStyle}
       >
         <SheetTitle className="sr-only">
           {translate('conversationKnowledge.name', 'Conversation Knowledge')}
