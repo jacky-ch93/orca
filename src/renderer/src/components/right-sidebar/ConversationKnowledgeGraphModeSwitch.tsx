@@ -3,6 +3,9 @@ import { translate } from '@/i18n/i18n'
 
 export type ConversationKnowledgeGraphMode = 'map' | 'graph'
 
+const GRAPH_MODE_ITEM_CLASS =
+  'h-6 min-h-6 rounded-sm border border-transparent px-2.5 text-[11px] text-muted-foreground shadow-none hover:bg-background/60 hover:text-foreground data-[state=on]:border-foreground/20 data-[state=on]:bg-background data-[state=on]:font-medium data-[state=on]:text-foreground data-[state=on]:shadow-xs'
+
 export function ConversationKnowledgeGraphModeSwitch({
   value,
   onChange
@@ -23,10 +26,10 @@ export function ConversationKnowledgeGraphModeSwitch({
       className="h-7 rounded-md border border-border bg-muted/40 p-0.5 shadow-xs"
       aria-label={translate('conversationKnowledge.graphMode.ariaLabel', 'Graph view')}
     >
-      <ToggleGroupItem value="map" className="h-6 min-h-6 px-2.5 text-[11px]">
+      <ToggleGroupItem value="map" className={GRAPH_MODE_ITEM_CLASS}>
         {translate('conversationKnowledge.graphMode.map', 'Map')}
       </ToggleGroupItem>
-      <ToggleGroupItem value="graph" className="h-6 min-h-6 px-2.5 text-[11px]">
+      <ToggleGroupItem value="graph" className={GRAPH_MODE_ITEM_CLASS}>
         {translate('conversationKnowledge.graphMode.graph', 'Graph')}
       </ToggleGroupItem>
     </ToggleGroup>
