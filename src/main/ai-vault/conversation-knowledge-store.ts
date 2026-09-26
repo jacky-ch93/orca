@@ -70,9 +70,7 @@ export class ConversationKnowledgeStore {
   }
 
   private async writeSnapshot(snapshot: StoredConversationKnowledge): Promise<void> {
-    if (!writeDurableSecureJsonFile(this.filePath(), snapshot)) {
-      throw new Error('Failed to persist conversation knowledge.')
-    }
+    writeDurableSecureJsonFile(this.filePath(), snapshot)
   }
 
   private filePath(): string {

@@ -26,8 +26,13 @@ import {
 import { generateConversationKnowledgeFromSession } from './conversation-knowledge-session-processing'
 import { listConversationKnowledge } from './conversation-knowledge-list'
 import type { ConversationKnowledgeServiceDependencies } from './conversation-knowledge-service-dependencies'
-// Keep one active process so a model switch can cancel the exact in-flight call.
 const MAX_CONCURRENT_SUMMARIES = 1
+const idleIndexStatus = (): ConversationKnowledgeIndexStatus => ({
+  state: 'idle',
+  total: 0,
+  completed: 0,
+  failed: 0
+})
 export type GenerateConversationKnowledgeArgs = {
   sourceAgent: AiVaultAgent
   sessionId: string
@@ -36,12 +41,7 @@ export type GenerateConversationKnowledgeArgs = {
   language?: string
 }
 export class ConversationKnowledgeService {
-  private indexStatus: ConversationKnowledgeIndexStatus = {
-    state: 'idle',
-    total: 0,
-    completed: 0,
-    failed: 0
-  }
+  private indexStatus = idleIndexStatus()
   private indexPromise: Promise<void> | null = null
   private indexConfig: string | null = null
   private cancelRequested = false
@@ -91,14 +91,6 @@ export class ConversationKnowledgeService {
       this.dependencies.listSessions(),
       this.dependencies.store.list()
     ])
-    if (this.indexPromise) {
-      if (this.indexConfig === configKey) {
-        return this.indexStatus
-      }
-      const activeIndexPromise = this.indexPromise
-      this.cancelIndex()
-      return activeIndexPromise.then(() => this.startIndex({ ...args, preserveExisting: true }))
-    }
     const generatedItemIds = storedItems
       .filter((item) => isConversationKnowledgeGenerationTitle(item.source.title))
       .map((item) => item.id)
@@ -149,6 +141,14 @@ export class ConversationKnowledgeService {
           }))
       )
     })
+    if (this.indexPromise) {
+      if (this.indexConfig === configKey) {
+        return this.indexStatus
+      }
+      const activeIndexPromise = this.indexPromise
+      this.cancelIndex()
+      return activeIndexPromise.then(() => this.startIndex({ ...args, preserveExisting: true }))
+    }
     this.indexStatus = {
       state: pendingSessions.length ? 'running' : 'idle',
       total: pendingSessions.length,
@@ -170,9 +170,7 @@ export class ConversationKnowledgeService {
     }
     return this.indexStatus
   }
-  getIndexStatus(): ConversationKnowledgeIndexStatus {
-    return this.indexStatus
-  }
+  getIndexStatus = (): ConversationKnowledgeIndexStatus => this.indexStatus
   cancelIndex(): void {
     this.cancelRequested = true
     const canceled = Math.max(
