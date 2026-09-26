@@ -118,7 +118,8 @@ function connectKnowledgeNotes(
         (node): node is ConversationKnowledgeGraphNode =>
           node?.type === 'statement' &&
           node.sourceBacked?.knowledge !== undefined &&
-          isActiveSourceBackedKnowledge(node)
+          isActiveSourceBackedKnowledge(node) &&
+          statementTargetsConcept(node, concept)
       )
     const knowledge = evidence[0]?.sourceBacked?.knowledge
     if (!knowledge) {
@@ -145,6 +146,19 @@ function connectKnowledgeNotes(
       addEdge(edges, statement.id, noteId, 'supports')
     }
   }
+}
+
+function statementTargetsConcept(
+  statement: ConversationKnowledgeGraphNode,
+  concept: ConversationKnowledgeGraphNode
+): boolean {
+  const explicitConcepts = statement.sourceBacked?.concepts
+  if (!explicitConcepts?.length) {
+    return true
+  }
+  return explicitConcepts.some(
+    (label) => `concept:${normalizeKnowledgeLabel(label).toLocaleLowerCase()}` === concept.id
+  )
 }
 
 function isActiveSourceBackedKnowledge(node: ConversationKnowledgeGraphNode): boolean {

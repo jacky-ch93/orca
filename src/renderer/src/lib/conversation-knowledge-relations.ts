@@ -37,7 +37,7 @@ export function buildConversationKnowledgeRelations(
   for (const match of matches) {
     const claim = match.entry.claim
     if (!claim) {
-      const id = `statement:${match.item.id}:${match.entry.evidence.messageId}`
+      const id = `statement:${match.item.id}:${match.entry.evidence.messageId}:${match.entry.text}`
       relations.set(id, {
         id,
         kind: 'statement',

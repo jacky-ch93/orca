@@ -61,6 +61,10 @@ export function ConversationKnowledgeMap({
     })
   }, [layout.height, layout.width, viewport.height, viewport.width])
 
+  const zoomBy = useCallback((factor: number): void => {
+    setTransform((current) => ({ ...current, scale: clampScale(current.scale * factor) }))
+  }, [])
+
   useEffect(() => {
     const element = viewportRef.current
     if (!element || typeof ResizeObserver === 'undefined') {
@@ -80,16 +84,25 @@ export function ConversationKnowledgeMap({
     fitMap()
   }, [fitMap])
 
+  useEffect(() => {
+    const element = viewportRef.current
+    if (!element) {
+      return
+    }
+    const onWheel = (event: WheelEvent): void => {
+      event.preventDefault()
+      zoomBy(event.deltaY < 0 ? 1.12 : 1 / 1.12)
+    }
+    element.addEventListener('wheel', onWheel, { passive: false })
+    return () => element.removeEventListener('wheel', onWheel)
+  }, [zoomBy])
+
   if (!clusters.length) {
     return (
       <div className="flex min-h-52 items-center justify-center px-6 text-center text-sm text-muted-foreground">
         {translate('conversationKnowledge.map.empty', 'No concepts are available for the map yet.')}
       </div>
     )
-  }
-
-  const zoomBy = (factor: number): void => {
-    setTransform((current) => ({ ...current, scale: clampScale(current.scale * factor) }))
   }
 
   return (
@@ -135,10 +148,6 @@ export function ConversationKnowledgeMap({
         }}
         onPointerUp={() => {
           dragRef.current = null
-        }}
-        onWheel={(event) => {
-          event.preventDefault()
-          zoomBy(event.deltaY < 0 ? 1.12 : 1 / 1.12)
         }}
         role="application"
         tabIndex={0}

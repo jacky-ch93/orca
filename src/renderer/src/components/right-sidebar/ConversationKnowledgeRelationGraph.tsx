@@ -91,7 +91,7 @@ export function ConversationKnowledgeRelationGraph({
             <div className="mt-1 border-t border-border pt-1">
               {relation.assertions.map((assertion) => (
                 <Button
-                  key={`${assertion.item.id}:${assertion.entry.evidence.messageId}`}
+                  key={`${assertion.item.id}:${assertion.entry.evidence.messageId}:${assertion.entry.text}`}
                   variant="denseMuted"
                   className="w-full justify-start text-left"
                   onClick={() => onSelect(assertion)}

@@ -133,8 +133,16 @@ function toHistoryMessage(message: NativeChatMessage): AiVaultHistoryMessage | n
     id: message.id.slice(0, AI_VAULT_HISTORY_MESSAGE_ID_MAX_LENGTH),
     role: message.role,
     text: text.slice(0, AI_VAULT_HISTORY_TEXT_MAX_LENGTH),
-    timestamp: message.timestamp === null ? null : new Date(message.timestamp).toISOString()
+    timestamp: toHistoryTimestamp(message.timestamp)
   }
+}
+
+function toHistoryTimestamp(value: number | null): string | null {
+  if (value === null) {
+    return null
+  }
+  const timestamp = new Date(value)
+  return Number.isNaN(timestamp.getTime()) ? null : timestamp.toISOString()
 }
 
 function clampLimit(value: number | undefined, fallback: number): number {

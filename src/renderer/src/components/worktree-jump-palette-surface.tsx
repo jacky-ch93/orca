@@ -132,7 +132,7 @@ export function WorktreeJumpPaletteSurface({
       >
         {(controller.knowledgeOnly ? controller.knowledgeLoading : controller.isLoading) &&
         controller.selectableItems.length === 0 &&
-        !controller.showCreateAction ? (
+        (controller.knowledgeOnly || !controller.showCreateAction) ? (
           <PaletteState
             title={translate(
               'auto.components.WorktreeJumpPalette.ff908adfe9',
@@ -143,7 +143,8 @@ export function WorktreeJumpPaletteSurface({
               'Gathering your recent worktrees and open tabs.'
             )}
           />
-        ) : controller.selectableItems.length === 0 && !controller.showCreateAction ? (
+        ) : controller.selectableItems.length === 0 &&
+          (controller.knowledgeOnly || !controller.showCreateAction) ? (
           <CommandEmpty className="py-0">
             <PaletteState title={emptyState.title} subtitle={emptyState.subtitle} />
           </CommandEmpty>

@@ -53,19 +53,26 @@ export class ConversationKnowledgeStore {
   }
 
   private async readSnapshot(): Promise<StoredConversationKnowledge> {
+    let raw: string
     try {
-      const value: unknown = JSON.parse(await readFile(this.filePath(), 'utf8'))
-      if (isStoredConversationKnowledge(value)) {
-        return value
+      raw = await readFile(this.filePath(), 'utf8')
+    } catch (error) {
+      if (isMissingFileError(error)) {
+        return { version: 1, items: [] }
       }
-    } catch {
-      // A missing or invalid cache is rebuilt from source conversations.
+      throw error
     }
-    return { version: 1, items: [] }
+    const value: unknown = JSON.parse(raw)
+    if (!isRecord(value) || value.version !== 1 || !Array.isArray(value.items)) {
+      throw new Error('Conversation knowledge store has an unsupported format.')
+    }
+    return { version: 1, items: value.items.filter(isKnowledgeItem) }
   }
 
   private async writeSnapshot(snapshot: StoredConversationKnowledge): Promise<void> {
-    writeDurableSecureJsonFile(this.filePath(), snapshot)
+    if (!writeDurableSecureJsonFile(this.filePath(), snapshot)) {
+      throw new Error('Failed to persist conversation knowledge.')
+    }
   }
 
   private filePath(): string {
@@ -73,12 +80,8 @@ export class ConversationKnowledgeStore {
   }
 }
 
-function isStoredConversationKnowledge(value: unknown): value is StoredConversationKnowledge {
-  if (!isRecord(value)) {
-    return false
-  }
-  const record = value
-  return record.version === 1 && Array.isArray(record.items) && record.items.every(isKnowledgeItem)
+function isMissingFileError(error: unknown): boolean {
+  return isRecord(error) && error.code === 'ENOENT'
 }
 
 function isKnowledgeItem(value: unknown): value is ConversationKnowledgeItem {

@@ -26,10 +26,8 @@ import {
 import { generateConversationKnowledgeFromSession } from './conversation-knowledge-session-processing'
 import { listConversationKnowledge } from './conversation-knowledge-list'
 import type { ConversationKnowledgeServiceDependencies } from './conversation-knowledge-service-dependencies'
-
 // Keep one active process so a model switch can cancel the exact in-flight call.
 const MAX_CONCURRENT_SUMMARIES = 1
-
 export type GenerateConversationKnowledgeArgs = {
   sourceAgent: AiVaultAgent
   sessionId: string
@@ -37,7 +35,6 @@ export type GenerateConversationKnowledgeArgs = {
   generatorModel?: string | null
   language?: string
 }
-
 export class ConversationKnowledgeService {
   private indexStatus: ConversationKnowledgeIndexStatus = {
     state: 'idle',
@@ -51,11 +48,9 @@ export class ConversationKnowledgeService {
   private activeCwd: string | null = null
   private pendingSessions: readonly AiVaultSession[] = []
   private readonly restorePromise: Promise<void>
-
   constructor(private readonly dependencies: ConversationKnowledgeServiceDependencies) {
     this.restorePromise = this.restoreInterruptedIndex()
   }
-
   async generate(args: GenerateConversationKnowledgeArgs): Promise<ConversationKnowledgeItem> {
     const sessions = await this.dependencies.listSessions()
     const session = sessions.find(
@@ -77,7 +72,6 @@ export class ConversationKnowledgeService {
     }
     return item
   }
-
   async startIndex(args: {
     generatorAgent: TuiAgent
     generatorModel: string
@@ -93,20 +87,18 @@ export class ConversationKnowledgeService {
       scopePaths: args.scopePaths ?? [],
       language: args.language ?? 'en'
     })
-    if (this.indexPromise) {
-      if (this.indexConfig === configKey) {
-        return this.indexStatus
-      }
-      this.cancelIndex()
-      await this.indexPromise
-      // A model/agent switch resumes only sessions without a saved result;
-      // completed summaries remain valid until explicitly regenerated.
-      return this.startIndex({ ...args, preserveExisting: true })
-    }
     const [sessions, storedItems] = await Promise.all([
       this.dependencies.listSessions(),
       this.dependencies.store.list()
     ])
+    if (this.indexPromise) {
+      if (this.indexConfig === configKey) {
+        return this.indexStatus
+      }
+      const activeIndexPromise = this.indexPromise
+      this.cancelIndex()
+      return activeIndexPromise.then(() => this.startIndex({ ...args, preserveExisting: true }))
+    }
     const generatedItemIds = storedItems
       .filter((item) => isConversationKnowledgeGenerationTitle(item.source.title))
       .map((item) => item.id)
@@ -170,17 +162,17 @@ export class ConversationKnowledgeService {
       this.writeCheckpoint('running', args)
       this.indexPromise = this.runIndex(pendingSessions, args).finally(() => {
         this.indexStatus = { ...this.indexStatus, state: 'idle' }
+        this.pendingSessions = []
+        this.writeCheckpoint('stopped', args)
         this.indexPromise = null
         this.indexConfig = null
       })
     }
     return this.indexStatus
   }
-
   getIndexStatus(): ConversationKnowledgeIndexStatus {
     return this.indexStatus
   }
-
   cancelIndex(): void {
     this.cancelRequested = true
     const canceled = Math.max(
@@ -201,7 +193,6 @@ export class ConversationKnowledgeService {
       cancelLocalGeneration('knowledge-enrichment', this.activeCwd)
     }
   }
-
   private async runIndex(
     sessions: readonly AiVaultSession[],
     args: { generatorAgent: TuiAgent; generatorModel: string; language?: string }
@@ -259,7 +250,6 @@ export class ConversationKnowledgeService {
       Array.from({ length: Math.min(MAX_CONCURRENT_SUMMARIES, sessions.length) }, () => worker())
     )
   }
-
   private async restoreInterruptedIndex(): Promise<void> {
     const recovered = await readResumableConversationKnowledgeIndex(this.dependencies)
     if (!recovered) {
@@ -284,11 +274,12 @@ export class ConversationKnowledgeService {
     this.pendingSessions = sessions
     this.indexPromise = this.runIndex(sessions, checkpoint.config).finally(() => {
       this.indexStatus = { ...this.indexStatus, state: 'idle' }
+      this.pendingSessions = []
+      this.writeCheckpoint('stopped', checkpoint.config)
       this.indexPromise = null
       this.indexConfig = null
     })
   }
-
   private writeCheckpoint(
     state: ConversationKnowledgeIndexCheckpoint['state'],
     args?: {
@@ -307,7 +298,6 @@ export class ConversationKnowledgeService {
       sessions: this.pendingSessions
     })
   }
-
   async list(scopePaths?: readonly string[]): Promise<ConversationKnowledgeItem[]> {
     return listConversationKnowledge({ ...this.dependencies, scopePaths })
   }

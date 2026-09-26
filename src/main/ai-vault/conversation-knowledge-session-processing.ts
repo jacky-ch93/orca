@@ -46,7 +46,7 @@ export async function generateConversationKnowledgeFromSession(input: {
     language: input.args.language
   })
   const item: ConversationKnowledgeItem = {
-    id: `${input.session.executionHostId}:${input.session.agent}:${input.session.sessionId}`,
+    id: conversationKnowledgeId(input.session),
     source: conversationKnowledgeSource(input.session),
     knowledge: {
       title: resolveKnowledgeTitle(

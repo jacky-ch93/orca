@@ -94,7 +94,18 @@
       "topics": "Topics",
       "entities": "Entities",
       "source": "Source",
-      "openSessionHistory": "Open Agent Session History"
+      "openSessionHistory": "Open Agent Session History",
+      "handoff": "Agent handoff",
+      "handoffIncluded": "Included in agent context",
+      "handoffExcluded": "Excluded from agent context",
+      "handoffUserConfirmed": "User confirmed",
+      "handoffVerified": "Verified",
+      "handoffInferred": "Inferred",
+      "handoffProposal": "Proposal",
+      "handoffActive": "Active",
+      "handoffSuperseded": "Superseded",
+      "handoffConflicted": "Conflicted",
+      "handoffExpired": "Expired"
     },
     "nodeType": {
       "project": "Project",

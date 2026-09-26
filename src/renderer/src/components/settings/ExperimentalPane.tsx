@@ -79,7 +79,7 @@ export function ExperimentalPane({
             'Floating animated pet in the bottom-right corner.'
           )}
           keywords={getExperimentalSearchEntry().pet.keywords}
-          className="ml-4 space-y-3 border-l-2 border-border/60 py-2 pl-4"
+          className="space-y-3 py-2"
           id="experimental-pet"
         >
           <div className="flex items-start justify-between gap-4">

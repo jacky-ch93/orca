@@ -78,10 +78,12 @@ function normalizeEntry(
       ...entry.evidence,
       ...(entry.evidence.supportingMessageIds
         ? {
-            supportingMessageIds: [...new Set(entry.evidence.supportingMessageIds)]
-              .filter((messageId) => messageId !== entry.evidence.messageId)
-              .map((messageId) => messageId.trim())
-              .filter(Boolean)
+            supportingMessageIds: [
+              ...new Set(entry.evidence.supportingMessageIds.map((messageId) => messageId.trim()))
+            ]
+              .filter(
+                (messageId) => messageId.length > 0 && messageId !== entry.evidence.messageId.trim()
+              )
               .slice(0, 3)
           }
         : {})
