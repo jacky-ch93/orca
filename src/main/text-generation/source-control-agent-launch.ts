@@ -58,6 +58,7 @@ export const spawnSourceControlAgent: SpawnSourceControlAgent = (input) => {
     program: spawnCmd,
     args: spawnArgs,
     env: withCliRuntimeOnPath(resolvedBinary, spawnEnv),
+    detached: input.detached,
     ...(input.useCwdForNative ? { cwd: input.cwd } : {})
   })
   if (input.stdinMode === 'ignore') {

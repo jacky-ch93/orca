@@ -94,4 +94,5 @@ export type SpawnSourceControlAgent = (input: {
   wslDistro?: string
   stdinMode: 'ignore' | 'pipe'
   useCwdForNative: boolean
+  detached?: boolean
 }) => SpawnedSourceControlAgentProcess
