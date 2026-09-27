@@ -10,7 +10,10 @@ import {
   type ConversationKnowledgeItem
 } from '../../shared/conversation-knowledge-items'
 import type { TuiAgent } from '../../shared/tui-agent'
-import { resolveConversationKnowledgeModel } from './session-enrichment'
+import {
+  ConversationKnowledgeCleanupUnverifiedError,
+  resolveConversationKnowledgeModel
+} from './session-enrichment'
 import {
   conversationKnowledgeId,
   conversationPathIsWithin,
@@ -234,6 +237,9 @@ export class ConversationKnowledgeService {
           if (!this.cancelRequested && !isCanceledConversationKnowledgeGeneration(error)) {
             this.indexStatus = { ...this.indexStatus, failed: this.indexStatus.failed + 1 }
           }
+          if (error instanceof ConversationKnowledgeCleanupUnverifiedError) {
+            return
+          }
         } finally {
           this.activeCwd = null
           if (this.indexStatus.activeSession?.sessionId === session.sessionId) {
@@ -280,12 +286,7 @@ export class ConversationKnowledgeService {
   }
   private writeCheckpoint(
     state: ConversationKnowledgeIndexCheckpoint['state'],
-    args?: {
-      generatorAgent: TuiAgent
-      generatorModel: string
-      scopePaths?: string[]
-      language?: string
-    }
+    args?: ConversationKnowledgeIndexCheckpoint['config']
   ): void {
     const config = args ?? (this.indexConfig ? JSON.parse(this.indexConfig) : null)
     writeConversationKnowledgeIndexCheckpoint({

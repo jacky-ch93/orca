@@ -17,6 +17,7 @@ export function useAiVaultHistoryNavigation(input: {
 }): {
   historyTarget: ConversationHistoryTarget | null
   onQueryChange: (query: string) => void
+  clearHistoryTarget: () => void
 } {
   const {
     onScopeChange,
@@ -34,6 +35,7 @@ export function useAiVaultHistoryNavigation(input: {
     },
     [setQuery]
   )
+  const clearHistoryTarget = useCallback(() => setHistoryTarget(null), [])
 
   useEffect(() => {
     const revealSource = (): void => {
@@ -60,5 +62,5 @@ export function useAiVaultHistoryNavigation(input: {
     setQuery,
     setSessionLimit
   ])
-  return { historyTarget, onQueryChange }
+  return { historyTarget, onQueryChange, clearHistoryTarget }
 }

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { selectConversationHistoryTarget } from '@/lib/conversation-history-selection'
 import { useAiVaultHistoryNavigation } from './use-ai-vault-history-navigation'
@@ -45,6 +45,8 @@ describe('useAiVaultHistoryNavigation', () => {
         sessionId: 'source-session',
         scope
       })
+      act(() => result.current.clearHistoryTarget())
+      expect(result.current.historyTarget).toBeNull()
     }
   )
 })

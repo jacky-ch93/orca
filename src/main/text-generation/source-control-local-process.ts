@@ -106,7 +106,7 @@ export function runLocalSourceControlPlan(input: {
         : killSourceControlAgentProcess(child)
     }
     const markClosedAfterTermination = (): void => {
-      void (terminationComplete ?? Promise.resolve()).then(markProcessClosed)
+      void (terminationComplete ?? Promise.resolve()).finally(markProcessClosed)
     }
     const finalize = (value: InternalTextGenerationResult): void => {
       if (settled) {
@@ -129,7 +129,24 @@ export function runLocalSourceControlPlan(input: {
         finalize(value)
         return
       }
-      void (terminationComplete ?? Promise.resolve()).finally(() => finalize(value))
+      void (terminationComplete ?? Promise.resolve()).then(
+        (terminated) =>
+          finalize(
+            terminated === false
+              ? {
+                  success: false,
+                  error: 'Generation cleanup could not be verified.',
+                  cleanupUnverified: true
+                }
+              : value
+          ),
+        () =>
+          finalize({
+            success: false,
+            error: 'Generation cleanup could not be verified.',
+            cleanupUnverified: true
+          })
+      )
     }
     const cancel = (): void => {
       canceledByUser = true
@@ -195,7 +212,7 @@ export function runLocalSourceControlPlan(input: {
         return
       }
       if (outputLimitExceeded) {
-        finalize({
+        finalizeAfterTermination({
           success: false,
           error: `${plan.label} CLI command produced too much output. Check the agent CLI configuration and try again.`
         })

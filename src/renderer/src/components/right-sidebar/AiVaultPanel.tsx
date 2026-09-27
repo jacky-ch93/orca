@@ -135,7 +135,7 @@ export default function AiVaultPanel(): React.JSX.Element {
     activeProjectKey,
     activeWorktreePath: activeWorktree?.path ?? null
   })
-  const { historyTarget, onQueryChange } = useAiVaultHistoryNavigation({
+  const { historyTarget, onQueryChange, clearHistoryTarget } = useAiVaultHistoryNavigation({
     onScopeChange: handleScopeChange,
     setQuery,
     setSessionLimit,
@@ -287,8 +287,14 @@ export default function AiVaultPanel(): React.JSX.Element {
         adjustmentCount={viewAdjustmentCount}
         focusSearchRequestId={focusSearchRequestId}
         onQueryChange={onQueryChange}
-        onScopeChange={handleScopeChange}
-        onExecutionHostScopeChange={onExecutionHostScopeChange}
+        onScopeChange={(nextScope) => {
+          clearHistoryTarget()
+          handleScopeChange(nextScope)
+        }}
+        onExecutionHostScopeChange={(nextExecutionHostScope) => {
+          clearHistoryTarget()
+          onExecutionHostScopeChange(nextExecutionHostScope)
+        }}
         onAgentEnabledChange={setAgentEnabled}
         onAllAgentsEnabledChange={setAllAgentsEnabled}
         onGroupChange={setGroup}

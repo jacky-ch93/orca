@@ -20,6 +20,12 @@ const MAX_SUMMARY_MESSAGES = 12
 const MAX_SUMMARY_MESSAGE_CHARS = 1_200
 const MAX_SUMMARY_TRANSCRIPT_CHARS = 12_000
 
+export class ConversationKnowledgeCleanupUnverifiedError extends Error {
+  constructor() {
+    super('Conversation knowledge generation cleanup could not be verified.')
+  }
+}
+
 export const CONVERSATION_KNOWLEDGE_CLAIM_EXTRACTION_INSTRUCTION =
   'For every user-confirmed handoff that records a direct choice, default, format, architecture, or constraint, emit claim when one user message contains both its literal subject and literal object. Copy those subject and object strings verbatim from that message; relation may be a concise normalized name. evidence.messageId must name that literal message. When a later user confirmation establishes the choice, add its id to supportingMessageIds. For example, if one user message says "Framework A defines the core agent and Framework B wraps the workflow" and a later user message says "Use that plan", emit claims "Framework A → core-role → core agent" and "Framework B → wraps → workflow", with the first message as messageId and the second as supporting evidence. Do not omit a qualifying claim merely because the handoff text paraphrases it. Do not emit a claim whose subject is only a plan label and whose object is only a confirmation verb. Omit claim unless one user message literally names its subject and object and the relation can have only one value in the same workspace.'
 
@@ -102,6 +108,9 @@ export async function enrichAiVaultSession(input: {
     result = await run(fallbackModel)
   }
   if (!result.success) {
+    if (result.cleanupUnverified) {
+      throw new ConversationKnowledgeCleanupUnverifiedError()
+    }
     throw new Error(result.error)
   }
   const parsed = parseConversationKnowledgeOutput(result.rawOutput)

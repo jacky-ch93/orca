@@ -64,6 +64,7 @@ export type InternalTextGenerationResult =
       success: false
       error: string
       canceled?: boolean
+      cleanupUnverified?: boolean
       failureOutput?: AgentGenerationFailureOutput
     }
 
