@@ -1,7 +1,10 @@
-import { useEffect, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import type { AiVaultAgent, AiVaultScope } from '../../../../shared/ai-vault-types'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
-import { consumeConversationHistoryTarget } from '@/lib/conversation-history-selection'
+import {
+  consumeConversationHistoryTarget,
+  type ConversationHistoryTarget
+} from '@/lib/conversation-history-selection'
 import type { AiVaultSessionLimit } from './ai-vault-session-limit'
 
 export function useAiVaultHistoryNavigation(input: {
@@ -11,7 +14,10 @@ export function useAiVaultHistoryNavigation(input: {
   setAgentEnabled: (agent: AiVaultAgent, enabled: boolean) => void
   setCollapsedGroups: Dispatch<SetStateAction<Set<string>>>
   onExecutionHostScopeChange: (scope: ExecutionHostId) => void
-}): void {
+}): {
+  historyTarget: ConversationHistoryTarget | null
+  onQueryChange: (query: string) => void
+} {
   const {
     onScopeChange,
     setQuery,
@@ -20,6 +26,14 @@ export function useAiVaultHistoryNavigation(input: {
     setCollapsedGroups,
     onExecutionHostScopeChange
   } = input
+  const [historyTarget, setHistoryTarget] = useState<ConversationHistoryTarget | null>(null)
+  const onQueryChange = useCallback(
+    (query: string) => {
+      setHistoryTarget(null)
+      setQuery(query)
+    },
+    [setQuery]
+  )
 
   useEffect(() => {
     const revealSource = (): void => {
@@ -28,6 +42,7 @@ export function useAiVaultHistoryNavigation(input: {
         return
       }
       setQuery(target.sessionId)
+      setHistoryTarget(target)
       onScopeChange(target.scope)
       setSessionLimit('unlimited')
       setAgentEnabled(target.agent, true)
@@ -45,4 +60,5 @@ export function useAiVaultHistoryNavigation(input: {
     setQuery,
     setSessionLimit
   ])
+  return { historyTarget, onQueryChange }
 }

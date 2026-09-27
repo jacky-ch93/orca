@@ -15,10 +15,7 @@ import {
   deriveAiVaultWorkspaceScopePaths
 } from './ai-vault-scope-paths'
 import { countAiVaultViewAdjustments } from './ai-vault-view-defaults'
-import {
-  buildAiVaultProjectContext,
-  buildAiVaultSessionProjectById
-} from './ai-vault-session-projects'
+import { buildAiVaultProjectContext } from './ai-vault-session-projects'
 import {
   resolveAiVaultSessionResumeActions,
   resolveAiVaultHistorySessionResumeState
@@ -26,10 +23,6 @@ import {
 import { useAiVaultSessionLaunchActions } from './ai-vault-session-launch-actions'
 import type { AiVaultResumeInChatEligibility } from './ai-vault-session-resume-in-chat'
 import { resolveAiVaultSessionResumeInChatForWorkspace } from './ai-vault-session-resume-in-chat-workspace'
-import {
-  useAiVaultSessionWorktreeMap,
-  withAiVaultCurrentWorktreeStatus
-} from './ai-vault-session-worktree'
 import { openAiVaultSessionLogInOrca } from './ai-vault-session-log-open'
 import { useAiVaultOriginalPaneActions } from './ai-vault-original-pane-actions'
 import type { AiVaultSession } from '../../../../shared/ai-vault-types'
@@ -60,6 +53,8 @@ import { useAiVaultPanelSearch } from './use-ai-vault-search'
 import { aiVaultSearchScopeIdentity } from './ai-vault-search-scope-identity'
 import { AiVaultPanelSearch } from './AiVaultPanelSearch'
 import { copyAiVaultSessionValue } from './ai-vault-session-copy'
+import { exactConversationHistorySessions } from './ai-vault-exact-history-target'
+import { useAiVaultSessionDisplayContext } from './use-ai-vault-session-display-context'
 export default function AiVaultPanel(): React.JSX.Element {
   const activeWorktreeId = useActiveWorktreeId()
   const activeWorktree = useActiveWorktree()
@@ -140,7 +135,7 @@ export default function AiVaultPanel(): React.JSX.Element {
     activeProjectKey,
     activeWorktreePath: activeWorktree?.path ?? null
   })
-  useAiVaultHistoryNavigation({
+  const { historyTarget, onQueryChange } = useAiVaultHistoryNavigation({
     onScopeChange: handleScopeChange,
     setQuery,
     setSessionLimit,
@@ -170,33 +165,28 @@ export default function AiVaultPanel(): React.JSX.Element {
       aiVaultSearchScopeIdentity({ scope, activeWorktreeId: activeWorktree?.id, activeProjectKey }),
     [activeProjectKey, activeWorktree?.id, scope]
   )
-  const search = useAiVaultPanelSearch(query, agents, searchWithin, executionHostScope, searchSort)
-  const { searching, searchHits } = search
-  const sessions = searching ? search.sessions : history
-  const sessionProjectById = useMemo(
-    () =>
-      buildAiVaultSessionProjectById({
-        repos,
-        worktrees: allWorktrees,
-        projectHostSetupProjection,
-        sessions
-      }),
-    [allWorktrees, projectHostSetupProjection, repos, sessions]
+  const searchQuery = historyTarget ? '' : query
+  const search = useAiVaultPanelSearch(
+    searchQuery,
+    agents,
+    searchWithin,
+    executionHostScope,
+    searchSort
   )
-  const sessionWorktreeById = useAiVaultSessionWorktreeMap({
+  const { searching, searchHits } = search
+  const exactTargetSessions = useMemo(
+    () => exactConversationHistorySessions(history, historyTarget),
+    [history, historyTarget]
+  )
+  const sessions = historyTarget ? exactTargetSessions : searching ? search.sessions : history
+  const effectiveActiveWorktreeId = activeWorktreeId ?? activeWorktree?.id ?? null
+  const { sessionProjectById, getSessionWorktreeInfo } = useAiVaultSessionDisplayContext({
     sessions,
     repos,
-    worktrees: allWorktrees
+    worktrees: allWorktrees,
+    projectHostSetupProjection,
+    effectiveActiveWorktreeId
   })
-  const effectiveActiveWorktreeId = activeWorktreeId ?? activeWorktree?.id ?? null
-  const getSessionWorktreeInfo = useCallback(
-    (session: AiVaultSession) =>
-      withAiVaultCurrentWorktreeStatus(
-        sessionWorktreeById.get(session.id) ?? null,
-        effectiveActiveWorktreeId
-      ),
-    [effectiveActiveWorktreeId, sessionWorktreeById]
-  )
   const launchActions = useAiVaultSessionLaunchActions({
     activeWorktree: activeWorktree ?? null,
     activeWorktreeId: effectiveActiveWorktreeId,
@@ -210,17 +200,23 @@ export default function AiVaultPanel(): React.JSX.Element {
     sessionLimit
   })
 
-  const { filteredSessions, groups } = useAiVaultPanelSessions(sessions, searching, group, {
-    query,
-    agents,
-    scope,
-    sort,
-    activeWorktreePaths,
-    activeProjectKey,
-    sessionProjectById,
-    projectLabelByKey,
-    hideEmptySessions
-  })
+  const { filteredSessions, groups } = useAiVaultPanelSessions(
+    sessions,
+    searching,
+    group,
+    historyTarget !== null,
+    {
+      query,
+      agents,
+      scope,
+      sort,
+      activeWorktreePaths,
+      activeProjectKey,
+      sessionProjectById,
+      projectLabelByKey,
+      hideEmptySessions
+    }
+  )
   const getSessionResumeState = useCallback(
     (session: AiVaultSession) =>
       resolveAiVaultHistorySessionResumeState({
@@ -290,7 +286,7 @@ export default function AiVaultPanel(): React.JSX.Element {
         sessionLimit={sessionLimit}
         adjustmentCount={viewAdjustmentCount}
         focusSearchRequestId={focusSearchRequestId}
-        onQueryChange={setQuery}
+        onQueryChange={onQueryChange}
         onScopeChange={handleScopeChange}
         onExecutionHostScopeChange={onExecutionHostScopeChange}
         onAgentEnabledChange={setAgentEnabled}

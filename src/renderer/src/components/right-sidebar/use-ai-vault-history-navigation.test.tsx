@@ -23,7 +23,7 @@ describe('useAiVaultHistoryNavigation', () => {
         scope
       })
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useAiVaultHistoryNavigation({
           onScopeChange,
           setQuery,
@@ -39,6 +39,12 @@ describe('useAiVaultHistoryNavigation', () => {
       expect(setSessionLimit).toHaveBeenCalledWith('unlimited')
       expect(setAgentEnabled).toHaveBeenCalledWith('codex', true)
       expect(onExecutionHostScopeChange).toHaveBeenCalledWith('local')
+      expect(result.current.historyTarget).toEqual({
+        executionHostId: 'local',
+        agent: 'codex',
+        sessionId: 'source-session',
+        scope
+      })
     }
   )
 })
