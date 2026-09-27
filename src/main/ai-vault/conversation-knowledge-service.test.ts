@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ConversationKnowledgeService } from './conversation-knowledge-service'
+import { ConversationKnowledgeCleanupUnverifiedError } from './session-enrichment'
 import type { AiVaultSession } from '../../shared/ai-vault-types'
 import type { AiVaultSessionEnrichment } from '../../shared/ai-vault-history-types'
 import {
@@ -89,6 +90,30 @@ describe('ConversationKnowledgeService', () => {
     expect(service.getIndexStatus()).toEqual({
       state: 'idle',
       total: 1,
+      completed: 0,
+      failed: 1
+    })
+  })
+
+  it('stops indexing when summary cleanup cannot be verified', async () => {
+    const enrich = vi.fn().mockRejectedValue(new ConversationKnowledgeCleanupUnverifiedError())
+    const service = new ConversationKnowledgeService({
+      listSessions: vi.fn().mockResolvedValue([session('one'), session('two')]),
+      readSession: vi.fn().mockResolvedValue(readableHistory()),
+      enrich,
+      store: {
+        list: vi.fn().mockResolvedValue([]),
+        upsert: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined)
+      }
+    })
+
+    await service.startIndex({ generatorAgent: 'codex', generatorModel: 'gpt-5' })
+    await vi.waitFor(() => expect(service.getIndexStatus().state).toBe('idle'))
+
+    expect(enrich).toHaveBeenCalledOnce()
+    expect(service.getIndexStatus()).toMatchObject({
+      total: 2,
       completed: 0,
       failed: 1
     })
